@@ -1,8 +1,9 @@
-# HubSpot Segments App
+# HubSpot Segments Viewer
 
-Outil interne Next.js 15 permettant de consulter les contacts de listes HubSpot prédéfinies, avec lien direct vers la fiche HubSpot de chaque contact.
+Outil interne Next.js 15 permettant de consulter, en lecture seule, les **Contacts** ou les **Companies** d'une liste HubSpot, avec lien direct vers la fiche de chaque record.
 
-- Lecture seule, pas de modification côté HubSpot.
+- Une seule page, deux modes de sélection : **recherche par nom** ou **collage d'une URL HubSpot**.
+- Le type d'objet (contact ou company) est **auto-détecté** à partir des métadonnées de la liste.
 - Authentification par mot de passe partagé (cookie httpOnly signé HMAC).
 - Pas de base de données : tout est récupéré en direct depuis HubSpot.
 
@@ -16,20 +17,28 @@ Outil interne Next.js 15 permettant de consulter les contacts de listes HubSpot 
 ## 1. Créer la Private App HubSpot
 
 1. Dans HubSpot, va dans **Settings → Integrations → Private Apps**.
-2. Clique sur **Create a private app**.
-3. Dans l'onglet **Scopes**, coche au minimum :
+2. Clique sur **Create a private app** (ou ouvre l'app existante).
+3. Dans l'onglet **Scopes**, coche **obligatoirement** :
    - `crm.lists.read`
    - `crm.objects.contacts.read`
-4. Crée l'app et copie l'**access token** (commence par `pat-`).
+   - `crm.objects.companies.read`
+4. Crée l'app (ou clique **Save**) et copie l'**access token** (commence par `pat-`).
 
-## 2. Récupérer `HUBSPOT_PORTAL_ID` et les IDs de listes
+### Mettre à jour une Private App existante
 
-- **Portal ID** : visible dans l'URL quand tu es connecté à HubSpot, sous la forme `https://app.hubspot.com/contacts/<PORTAL_ID>/...`. C'est le numéro après `/contacts/`.
-- **List ID** : va dans **Contacts → Lists**, ouvre la liste, l'URL contient `/lists/<PORTAL_ID>/list/<LIST_ID>/`. C'est le dernier numéro.
+Si tu avais déjà installé l'app sans le scope companies :
+
+1. Ouvre la Private App dans HubSpot.
+2. Onglet **Scopes** → ajoute `crm.objects.companies.read`.
+3. Clique **Save** en haut à droite. Le token reste inchangé.
+
+## 2. Récupérer `HUBSPOT_PORTAL_ID`
+
+**Portal ID** : visible dans l'URL quand tu es connecté à HubSpot, sous la forme `https://app.hubspot.com/contacts/<PORTAL_ID>/...`. C'est le numéro après `/contacts/`.
+
+Aucun ID de liste à configurer manuellement : l'app lit les métadonnées au besoin.
 
 ## 3. Configurer `.env.local`
-
-Copie `.env.example` vers `.env.local` et remplis les valeurs :
 
 ```bash
 cp .env.example .env.local
@@ -57,25 +66,25 @@ npm run dev
 
 Ouvre [http://localhost:3000](http://localhost:3000). Tu es redirigé vers `/login`. Entre le mot de passe configuré dans `.env.local`.
 
-## 5. Ajouter / retirer des segments
+## 5. Utilisation
 
-Édite `config/segments.ts` :
+La page d'accueil expose deux champs, toujours visibles en parallèle :
 
-```ts
-export const SEGMENTS = [
-  { id: "12345", label: "Exemple segment 1" },
-  { id: "67890", label: "Exemple segment 2" },
-  { id: "99999", label: "Nouveau segment" },
-] as const;
-```
+- **Rechercher une liste par nom** : tape un nom (même partiel), valide avec Entrée ou clique sur *Rechercher*. Si un seul résultat correspond, la liste est chargée directement. Si plusieurs correspondent, un menu déroulant (≤ 10) s'affiche avec, pour chaque liste, son nom, un badge **Contacts** ou **Companies** et le nombre de records.
+- **Coller l'URL d'une liste HubSpot** : copie l'URL d'une liste depuis HubSpot (format `https://app.hubspot.com/contacts/<portal>/lists/manager/<listId>/...` ou variantes), valide avec Entrée ou clique sur *Charger*. L'ID est extrait par regex et la liste vérifiée côté serveur.
 
-Le `id` doit être l'ID numérique HubSpot de la liste. Le `label` est libre et s'affiche dans le sélecteur. Le endpoint `/api/segments/[id]` refuse tout ID qui n'est pas dans cette liste (protection anti-IDOR).
+Une fois une liste chargée, l'app affiche un en-tête (nom + badge de type + nombre de records) puis le tableau adapté :
+
+- `objectType = contact` → colonnes Prénom, Nom, Email, Téléphone, Adresse, Entreprise, Poste + lien *Ouvrir ↗* vers la fiche.
+- `objectType = company` → colonnes Nom, Domaine, Téléphone, Adresse, Industrie, Effectif, Site web + lien *Ouvrir ↗*.
+
+La liste sélectionnée est conservée dans l'URL sous la forme `?listId=12345` (lien partageable). Le mode d'entrée (nom vs URL) n'est pas mémorisé : c'est toujours le **dernier champ validé qui gagne**.
 
 ## 6. Déployer sur Vercel
 
 1. Pousse le projet sur un repo Git.
 2. Sur Vercel, clique sur **New Project** et importe le repo.
-3. Dans **Settings → Environment Variables**, ajoute les 4 variables de `.env.example` pour les environnements **Production**, **Preview** et **Development** (ou au moins Production et Preview) :
+3. Dans **Settings → Environment Variables**, ajoute pour Production / Preview :
    - `HUBSPOT_ACCESS_TOKEN`
    - `HUBSPOT_PORTAL_ID`
    - `APP_PASSWORD`
@@ -84,11 +93,13 @@ Le `id` doit être l'ID numérique HubSpot de la liste. Le `label` est libre et 
 
 ## Architecture & sécurité
 
-- `lib/hubspot.ts` : wrapper `server-only`, centralise les appels HubSpot. Traduit 401/404/429 en messages clairs.
-- `lib/session.ts` : création et vérification de cookies signés HMAC-SHA256 via Web Crypto (compatible Edge runtime).
+- `lib/hubspot.ts` : wrapper `server-only`. Expose `listAllLists`, `getListMetadata`, `getContactsForList`, `getCompaniesForList`. Traduit 401/403/404/422/429 en messages clairs.
+- `lib/session.ts` : cookies signés HMAC-SHA256 via Web Crypto (compatible Edge runtime).
 - `middleware.ts` : vérifie la signature du cookie sur toutes les routes sauf `/login` et `/api/auth/login`. Les API renvoient 401 JSON, les pages sont redirigées vers `/login`.
-- `app/api/segments/[id]/route.ts` : valide que l'ID est dans `SEGMENTS` avant d'appeler HubSpot, cache serveur 60 s (`export const revalidate = 60`).
-- Le token HubSpot reste côté serveur — aucun appel HubSpot n'est fait depuis le navigateur.
+- `app/api/lists/search/route.ts` : `GET ?name=…`, paginé côté HubSpot, tri par pertinence (exact → prefix → contains), top 10. Cache serveur 5 min.
+- `app/api/lists/[id]/route.ts` : `GET` métadonnées d'une liste (`id`, `name`, `objectType`, `size`). 422 si le type d'objet n'est ni contact ni company.
+- `app/api/segments/[id]/route.ts` : auto-détecte le type via `getListMetadata`, puis fait le batch read correspondant. Retourne `{ type, records, listName, listSize }`. Cache serveur 60 s.
+- Le token HubSpot reste côté serveur — aucun appel HubSpot depuis le navigateur.
 
 ## Build
 

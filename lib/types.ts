@@ -1,24 +1,56 @@
+export type ObjectType = "contact" | "company";
+
+export interface HubSpotList {
+  id: string;
+  name: string;
+  objectType: ObjectType;
+  size: number;
+}
+
 export interface Contact {
   id: string;
-  firstname: string | null;
-  lastname: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  zip: string | null;
-  country: string | null;
-  company: string | null;
-  jobtitle: string | null;
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  company?: string;
+  jobtitle?: string;
 }
 
-export interface Segment {
+export interface Company {
   id: string;
-  label: string;
+  name?: string;
+  domain?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  country?: string;
+  industry?: string;
+  numberofemployees?: string;
+  website?: string;
 }
 
-export interface ContactsResponse {
-  contacts: Contact[];
+export type ContactsResponse = {
+  type: "contact";
+  records: Contact[];
+  listName: string;
+  listSize: number;
+};
+export type CompaniesResponse = {
+  type: "company";
+  records: Company[];
+  listName: string;
+  listSize: number;
+};
+export type RecordsResponse = ContactsResponse | CompaniesResponse;
+
+export interface SearchResponse {
+  lists: HubSpotList[];
 }
 
 export interface ErrorResponse {

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { isValidSegmentId } from "@/config/segments";
-import { HubSpotError, getContactsForSegment } from "@/lib/hubspot";
-import type { ContactsResponse } from "@/lib/types";
+import {
+  HubSpotError,
+  getCompaniesForList,
+  getContactsForList,
+  getListMetadata,
+} from "@/lib/hubspot";
+import type { RecordsResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const revalidate = 60;
@@ -13,13 +17,28 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  if (!isValidSegmentId(id)) {
-    return NextResponse.json({ error: "Segment inconnu." }, { status: 404 });
+  if (!/^\d+$/.test(id)) {
+    return NextResponse.json({ error: "ID de liste invalide." }, { status: 400 });
   }
 
   try {
-    const contacts = await getContactsForSegment(id);
-    const body: ContactsResponse = { contacts };
+    const meta = await getListMetadata(id);
+
+    const body: RecordsResponse =
+      meta.objectType === "contact"
+        ? {
+            type: "contact",
+            records: await getContactsForList(id),
+            listName: meta.name,
+            listSize: meta.size,
+          }
+        : {
+            type: "company",
+            records: await getCompaniesForList(id),
+            listName: meta.name,
+            listSize: meta.size,
+          };
+
     return NextResponse.json(body);
   } catch (err) {
     if (err instanceof HubSpotError) {
