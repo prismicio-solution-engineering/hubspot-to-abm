@@ -101,6 +101,29 @@ La liste sélectionnée est conservée dans l'URL sous la forme `?listId=12345` 
 - `app/api/segments/[id]/route.ts` : auto-détecte le type via `getListMetadata`, puis fait le batch read correspondant. Retourne `{ type, records, listName, listSize }`. Cache serveur 60 s.
 - Le token HubSpot reste côté serveur — aucun appel HubSpot depuis le navigateur.
 
+## Générer un payload pour un agent IA
+
+Depuis une liste de **contacts** (pas les companies), tu peux cocher un ou plusieurs contacts puis cliquer sur **Generate pages**. Une modale affiche le payload JSON prêt à envoyer, avec un bouton *Copier*.
+
+Format (versionné, stable) :
+
+```json
+{
+  "version": "1.0",
+  "generatedAt": "2026-04-20T14:32:00.000Z",
+  "source": { "type": "hubspot_list", "listId": "…", "listName": "…" },
+  "contacts": [
+    { "id": "123", "firstName": "Jean", "lastName": "Dupont", "company": "Acme", "jobTitle": "CMO" }
+  ]
+}
+```
+
+Les propriétés vides sont **omises** (pas de `null`, pas de chaîne vide) pour faciliter la consommation par l'agent IA. La fonction `buildPayload()` dans `lib/payload.ts` est pure et réutilisable.
+
+### Évolution future
+
+Quand le mode d'envoi à l'agent sera décidé, il suffira d'ajouter un endpoint `POST /api/generate-pages` qui reçoit ce même payload et le relaie. Côté UI, il n'y aura qu'à remplacer la copie manuelle par un `fetch`. Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs.
+
 ## Build
 
 ```bash

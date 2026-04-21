@@ -86,6 +86,7 @@ export default function ListResultsPanel({ listId, portalId }: Props) {
   }
 
   if (state.status !== "success") return null;
+  if (!listId) return null;
 
   const { type, records, listName } = state.data;
   const countLabel =
@@ -112,7 +113,12 @@ export default function ListResultsPanel({ listId, portalId }: Props) {
           Cette liste est vide.
         </p>
       ) : type === "contact" ? (
-        <ContactsTable records={records} portalId={portalId} />
+        <ContactsTable
+          records={records}
+          portalId={portalId}
+          listId={listId}
+          listName={listName}
+        />
       ) : (
         <CompaniesTable records={records} portalId={portalId} />
       )}

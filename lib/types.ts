@@ -56,3 +56,22 @@ export interface SearchResponse {
 export interface ErrorResponse {
   error: string;
 }
+
+export interface GeneratePagesContact {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  jobTitle?: string;
+}
+
+export interface GeneratePagesPayload {
+  version: "1.0";
+  generatedAt: string;
+  source: {
+    type: "hubspot_list";
+    listId: string;
+    listName: string;
+  };
+  contacts: GeneratePagesContact[];
+}
