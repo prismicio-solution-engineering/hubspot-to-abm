@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import GeneratePagesBar from "./GeneratePagesBar";
-import JsonPreviewModal from "./JsonPreviewModal";
-import { buildPayload } from "@/lib/payload";
-import type { Contact, GeneratePagesPayload } from "@/lib/types";
-
-const MAX_SELECTION = 20;
+import type { Contact } from "@/lib/types";
 
 interface Props {
   records: Contact[];
   portalId: string;
-  listId: string;
-  listName: string;
+  maxSelection: number;
+  selectedIds: ReadonlySet<string>;
+  onSelectionChange: (next: ReadonlySet<string>) => void;
+  onGenerate: () => void;
 }
 
 function formatAddress(c: Contact): string {
@@ -29,22 +27,17 @@ function displayName(c: Contact): string {
 export default function ContactsTable({
   records,
   portalId,
-  listId,
-  listName,
+  maxSelection,
+  selectedIds,
+  onSelectionChange,
+  onGenerate,
 }: Props) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [payload, setPayload] = useState<GeneratePagesPayload | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [listId]);
-
-  const isLimitReached = selectedIds.size >= MAX_SELECTION;
-  const effectiveSelectAllTarget = Math.min(records.length, MAX_SELECTION);
+  const isLimitReached = selectedIds.size >= maxSelection;
+  const effectiveSelectAllTarget = Math.min(records.length, maxSelection);
   const allSelected = useMemo(
-    () =>
-      records.length > 0 && selectedIds.size === effectiveSelectAllTarget,
+    () => records.length > 0 && selectedIds.size === effectiveSelectAllTarget,
     [records.length, selectedIds.size, effectiveSelectAllTarget],
   );
   const someSelected = selectedIds.size > 0 && !allSelected;
@@ -57,49 +50,42 @@ export default function ContactsTable({
 
   function toggleAll() {
     if (allSelected) {
-      setSelectedIds(new Set());
+      onSelectionChange(new Set());
       return;
     }
-    setSelectedIds(
-      new Set(records.slice(0, MAX_SELECTION).map((c) => c.id)),
+    onSelectionChange(
+      new Set(records.slice(0, maxSelection).map((c) => c.id)),
     );
   }
 
   function toggleRow(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        return next;
-      }
-      if (next.size >= MAX_SELECTION) {
-        return prev;
-      }
-      next.add(id);
-      return next;
-    });
-  }
-
-  function onGenerate() {
-    setPayload(buildPayload(records, selectedIds, listId, listName));
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+      onSelectionChange(next);
+      return;
+    }
+    if (next.size >= maxSelection) return;
+    next.add(id);
+    onSelectionChange(next);
   }
 
   return (
     <div className="flex flex-col gap-3">
-      {records.length > MAX_SELECTION && (
+      {records.length > maxSelection && (
         <div
           role="status"
           className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900"
         >
           Cette liste contient {records.length} contacts. La génération de pages
-          est limitée à {MAX_SELECTION} contacts par lot. Pour de meilleurs
+          est limitée à {maxSelection} contacts par lot. Pour de meilleurs
           résultats, créez une liste plus ciblée dans HubSpot.
         </div>
       )}
 
       <GeneratePagesBar
         selectedCount={selectedIds.size}
-        maxSelection={MAX_SELECTION}
+        maxSelection={maxSelection}
         onGenerate={onGenerate}
       />
 
@@ -180,8 +166,6 @@ export default function ContactsTable({
           </tbody>
         </table>
       </div>
-
-      <JsonPreviewModal payload={payload} onClose={() => setPayload(null)} />
     </div>
   );
 }

@@ -2,10 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 
-import type { ErrorResponse } from "@/lib/types";
+import type { ErrorResponse, HubSpotList } from "@/lib/types";
 
 interface Props {
-  onListSelected: (listId: string) => void;
+  onListSelected: (list: HubSpotList) => void;
 }
 
 function extractListIdFromUrl(url: string): string | null {
@@ -51,8 +51,10 @@ export default function UrlInput({ onListSelected }: Props) {
         });
         return;
       }
+      const list = (await res.json()) as HubSpotList;
       setState({ status: "idle" });
-      onListSelected(id);
+      setUrl("");
+      onListSelected(list);
     } catch {
       setState({ status: "error", message: "Erreur réseau." });
     }

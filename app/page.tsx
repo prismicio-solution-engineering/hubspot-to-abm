@@ -1,29 +1,33 @@
-import ListResultsPanel from "@/components/ListResultsPanel";
-import ListSearch from "@/components/ListSearch";
+import Link from "next/link";
+
 import LogoutButton from "@/components/LogoutButton";
 
-interface Props {
-  searchParams: Promise<{ listId?: string }>;
-}
-
-export default async function HomePage({ searchParams }: Props) {
-  const params = await searchParams;
-  const listId =
-    params.listId && /^\d+$/.test(params.listId) ? params.listId : null;
-  const portalId = process.env.HUBSPOT_PORTAL_ID ?? "";
-
+export default function HomePage() {
   return (
-    <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-6">
+    <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-6">
       <header className="flex items-center justify-between border-b border-gray-200 pb-4">
-        <h1 className="text-lg font-semibold text-gray-900">
-          HubSpot Segments Viewer
-        </h1>
+        <h1 className="text-lg font-semibold text-gray-900">ABM Campaigns</h1>
         <LogoutButton />
       </header>
 
-      <ListSearch />
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
+        <div className="flex max-w-2xl flex-col gap-3">
+          <h2 className="text-3xl font-semibold text-gray-900">
+            ABM Campaigns
+          </h2>
+          <p className="text-base text-gray-600">
+            Create your first campaign to start generating personalised ABM
+            pages from HubSpot segments.
+          </p>
+        </div>
 
-      <ListResultsPanel listId={listId} portalId={portalId} />
+        <Link
+          href="/campaigns/new?step=select-segment"
+          className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+        >
+          Start generating
+        </Link>
+      </main>
     </div>
   );
 }

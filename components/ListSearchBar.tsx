@@ -6,7 +6,7 @@ import TypeBadge from "./TypeBadge";
 import type { ErrorResponse, HubSpotList, SearchResponse } from "@/lib/types";
 
 interface Props {
-  onListSelected: (listId: string) => void;
+  onListSelected: (list: HubSpotList) => void;
 }
 
 type State =
@@ -44,7 +44,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
       }
       if (data.lists.length === 1) {
         setState({ status: "idle" });
-        onListSelected(data.lists[0].id);
+        onListSelected(data.lists[0]);
         return;
       }
       setState({ status: "results", query: trimmed, lists: data.lists });
@@ -55,7 +55,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
 
   function select(list: HubSpotList) {
     setState({ status: "idle" });
-    onListSelected(list.id);
+    onListSelected(list);
   }
 
   const busy = state.status === "loading";

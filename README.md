@@ -1,8 +1,9 @@
-# HubSpot Segments Viewer
+# ABM Campaigns
 
-Outil interne Next.js 15 permettant de consulter, en lecture seule, les **Contacts** ou les **Companies** d'une liste HubSpot, avec lien direct vers la fiche de chaque record.
+Outil interne Next.js 15 pour préparer des campagnes ABM à partir de listes HubSpot : sélection d'un segment, choix des contacts, génération d'un payload JSON prêt à envoyer à un agent IA.
 
-- Une seule page, deux modes de sélection : **recherche par nom** ou **collage d'une URL HubSpot**.
+- Flow par étapes (wizard) avec indicateur d'étapes, routé par query param (`?step=…`).
+- Deux modes de sélection d'un segment : **recherche par nom** ou **collage d'une URL HubSpot**.
 - Le type d'objet (contact ou company) est **auto-détecté** à partir des métadonnées de la liste.
 - Authentification par mot de passe partagé (cookie httpOnly signé HMAC).
 - Pas de base de données : tout est récupéré en direct depuis HubSpot.
@@ -68,17 +69,14 @@ Ouvre [http://localhost:3000](http://localhost:3000). Tu es redirigé vers `/log
 
 ## 5. Utilisation
 
-La page d'accueil expose deux champs, toujours visibles en parallèle :
+Après login, l'utilisateur arrive sur la page d'accueil **ABM Campaigns** (CTA *Start generating*) qui le lance dans un flow par étapes à `/campaigns/new?step=<id>` :
 
-- **Rechercher une liste par nom** : tape un nom (même partiel), valide avec Entrée ou clique sur *Rechercher*. Si un seul résultat correspond, la liste est chargée directement. Si plusieurs correspondent, un menu déroulant (≤ 10) s'affiche avec, pour chaque liste, son nom, un badge **Contacts** ou **Companies** et le nombre de records.
-- **Coller l'URL d'une liste HubSpot** : copie l'URL d'une liste depuis HubSpot (format `https://app.hubspot.com/contacts/<portal>/lists/manager/<listId>/...` ou variantes), valide avec Entrée ou clique sur *Charger*. L'ID est extrait par regex et la liste vérifiée côté serveur.
+1. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
+2. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape 1.
 
-Une fois une liste chargée, l'app affiche un en-tête (nom + badge de type + nombre de records) puis le tableau adapté :
+Un indicateur d'étapes (stepper numéroté) est visible tout au long du flow. Les étapes validées apparaissent en bleu avec une coche ; l'étape courante est mise en évidence ; les étapes futures sont grisées. Le seul moyen de revenir en arrière est via le bouton *Précédent* dans chaque étape.
 
-- `objectType = contact` → colonnes Prénom, Nom, Email, Téléphone, Adresse, Entreprise, Poste + lien *Ouvrir ↗* vers la fiche.
-- `objectType = company` → colonnes Nom, Domaine, Téléphone, Adresse, Industrie, Effectif, Site web + lien *Ouvrir ↗*.
-
-La liste sélectionnée est conservée dans l'URL sous la forme `?listId=12345` (lien partageable). Le mode d'entrée (nom vs URL) n'est pas mémorisé : c'est toujours le **dernier champ validé qui gagne**.
+L'état de la campagne en cours est conservé dans un contexte React (`lib/campaign-context.tsx`) pour toute la durée du flow. Un rafraîchissement de la page repart à l'étape 1 (pas de persistance pour l'instant).
 
 ## 6. Déployer sur Vercel
 
@@ -123,6 +121,44 @@ Les propriétés vides sont **omises** (pas de `null`, pas de chaîne vide) pour
 ### Évolution future
 
 Quand le mode d'envoi à l'agent sera décidé, il suffira d'ajouter un endpoint `POST /api/generate-pages` qui reçoit ce même payload et le relaie. Côté UI, il n'y aura qu'à remplacer la copie manuelle par un `fetch`. Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs.
+
+## Architecture du flow par étapes
+
+Le flow est piloté par une unique source de configuration : `lib/campaign-flow.ts`. Toute la mécanique (stepper, routeur d'étape, navigation) s'adapte automatiquement à cette liste.
+
+```
+app/
+├── page.tsx                          # Landing "ABM Campaigns"
+└── campaigns/new/
+    ├── layout.tsx                    # <CampaignProvider> + <StepIndicator>
+    └── page.tsx                      # <Suspense> autour du routeur d'étape
+components/
+├── CampaignStepRouter.tsx            # Lit ?step=… et rend l'étape correspondante
+├── StepIndicator.tsx                 # Stepper numéroté
+└── steps/
+    ├── SelectSegmentStep.tsx
+    └── SelectContactsStep.tsx
+lib/
+├── campaign-flow.ts                  # CAMPAIGN_STEPS (config des étapes)
+└── campaign-context.tsx              # CampaignProvider / useCampaign
+```
+
+### Ajouter une nouvelle étape
+
+1. Créer le composant dans `components/steps/NewStep.tsx`.
+2. L'ajouter à `CAMPAIGN_STEPS` dans `lib/campaign-flow.ts` (id, number, label, title, Component).
+
+Le stepper, le routeur d'étape et la navigation s'adaptent sans autre modification. Les composants d'étape ne connaissent pas leur position dans le flow : ils consomment `useCampaign()` pour l'état partagé et naviguent via `router.push("?step=...")`.
+
+### Ajouter un champ à l'état de la campagne
+
+1. Ajouter le champ dans `CampaignState` (`lib/campaign-context.tsx`).
+2. Ajouter un setter dans `CampaignProvider`.
+3. Consommer via `useCampaign()` dans l'étape concernée.
+
+### Persistance (évolution future)
+
+L'état vit actuellement en mémoire (rechargement = retour à l'étape 1). Pour ajouter la persistance (localStorage, session, API, DB), il suffira de modifier `CampaignProvider` pour lire/écrire dans le store cible. Les composants qui consomment `useCampaign()` n'auront rien à changer.
 
 ## Build
 
