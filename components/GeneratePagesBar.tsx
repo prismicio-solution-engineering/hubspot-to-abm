@@ -9,7 +9,7 @@ export default function GeneratePagesBar({
   maxSelection,
   onGenerate,
 }: Props) {
-  const noun = selectedCount > 1 ? "contacts sélectionnés" : "contact sélectionné";
+  const noun = selectedCount > 1 ? "contacts selected" : "contact selected";
   const isLimitReached = selectedCount >= maxSelection;
   const isEmpty = selectedCount === 0;
 
@@ -41,7 +41,7 @@ export default function GeneratePagesBar({
                 clipRule="evenodd"
               />
             </svg>
-            Limite atteinte
+            Limit reached
           </span>
         )}
       </div>

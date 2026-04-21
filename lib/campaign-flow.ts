@@ -16,14 +16,14 @@ export const CAMPAIGN_STEPS: CampaignStep[] = [
     id: "select-segment",
     number: 1,
     label: "Select segment",
-    title: "Select your HubSpot Segment",
+    title: "Select Your HubSpot Segment",
     Component: SelectSegmentStep,
   },
   {
     id: "select-contacts",
     number: 2,
     label: "Select contacts",
-    title: "Select contacts for your campaign",
+    title: "Select Contacts for Your Campaign",
     Component: SelectContactsStep,
   },
 ];

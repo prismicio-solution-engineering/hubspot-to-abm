@@ -34,7 +34,7 @@ export default function UrlInput({ onListSelected }: Props) {
       setState({
         status: "error",
         message:
-          "URL invalide. Formats acceptés : …/objectLists/12345/…, …/lists/manager/12345/… ou …/lists/12345",
+          "Invalid URL. Expected format: …/objectLists/12345/…, …/lists/manager/12345/…, or …/lists/12345",
       });
       return;
     }
@@ -47,7 +47,7 @@ export default function UrlInput({ onListSelected }: Props) {
         const data = (await res.json().catch(() => ({}))) as ErrorResponse;
         setState({
           status: "error",
-          message: data.error ?? `Liste introuvable (${res.status}).`,
+          message: data.error ?? `Segment not found (${res.status}).`,
         });
         return;
       }
@@ -56,7 +56,7 @@ export default function UrlInput({ onListSelected }: Props) {
       setUrl("");
       onListSelected(list);
     } catch {
-      setState({ status: "error", message: "Erreur réseau." });
+      setState({ status: "error", message: "Network error." });
     }
   }
 
@@ -65,7 +65,7 @@ export default function UrlInput({ onListSelected }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2">
       <label htmlFor="list-url" className="text-sm font-medium text-gray-700">
-        Coller l&apos;URL d&apos;une liste HubSpot
+        Paste a HubSpot segment URL
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
@@ -82,7 +82,7 @@ export default function UrlInput({ onListSelected }: Props) {
           disabled={busy || url.trim().length === 0}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto"
         >
-          {busy ? "Chargement…" : "Charger"}
+          {busy ? "Loading…" : "Load"}
         </button>
       </div>
 

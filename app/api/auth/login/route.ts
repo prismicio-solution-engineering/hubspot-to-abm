@@ -15,15 +15,15 @@ export async function POST(req: Request) {
     const body = await req.json();
     password = body?.password;
   } catch {
-    return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 
   if (typeof password !== "string" || password.length === 0) {
-    return NextResponse.json({ error: "Mot de passe manquant." }, { status: 400 });
+    return NextResponse.json({ error: "Password required." }, { status: 400 });
   }
 
   if (!verifyPassword(password)) {
-    return NextResponse.json({ error: "Mot de passe incorrect." }, { status: 401 });
+    return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
   const token = await createSessionToken();

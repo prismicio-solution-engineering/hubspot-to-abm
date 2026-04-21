@@ -33,7 +33,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
         const data = (await res.json().catch(() => ({}))) as ErrorResponse;
         setState({
           status: "error",
-          message: data.error ?? `Erreur ${res.status}.`,
+          message: data.error ?? `Error ${res.status}.`,
         });
         return;
       }
@@ -49,7 +49,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
       }
       setState({ status: "results", query: trimmed, lists: data.lists });
     } catch {
-      setState({ status: "error", message: "Erreur réseau." });
+      setState({ status: "error", message: "Network error." });
     }
   }
 
@@ -63,7 +63,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2">
       <label htmlFor="list-search" className="text-sm font-medium text-gray-700">
-        Rechercher une liste par nom
+        Search for a segment by name
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
@@ -73,7 +73,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
           autoComplete="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Tapez un nom de liste…"
+          placeholder="Type a segment name…"
           className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
         <button
@@ -81,7 +81,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
           disabled={busy || query.trim().length === 0}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto"
         >
-          {busy ? "Chargement…" : "Rechercher"}
+          {busy ? "Loading…" : "Search"}
         </button>
       </div>
 
@@ -93,7 +93,7 @@ export default function ListSearchBar({ onListSelected }: Props) {
 
       {state.status === "empty" && (
         <p className="text-sm text-gray-500">
-          Aucune liste trouvée pour « {state.query} ».
+          No segment found for &ldquo;{state.query}&rdquo;.
         </p>
       )}
 

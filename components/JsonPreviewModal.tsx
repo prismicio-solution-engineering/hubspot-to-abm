@@ -88,7 +88,7 @@ export default function JsonPreviewModal({ payload, onClose }: Props) {
     if (!ok) {
       setCopyState({
         status: "unavailable",
-        message: "Copie non disponible, sélectionnez et copiez manuellement.",
+        message: "Copy unavailable. Please select and copy manually.",
       });
       return;
     }
@@ -115,16 +115,16 @@ export default function JsonPreviewModal({ payload, onClose }: Props) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
             <h2 id={titleId} className="text-base font-semibold text-gray-900">
-              Payload prêt à envoyer
+              Payload ready to send
             </h2>
             <p className="text-sm text-gray-500">
-              {count} {noun} depuis la liste «&nbsp;{payload.source.listName}&nbsp;»
+              {count} {noun} from segment &ldquo;{payload.source.listName}&rdquo;
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fermer la modale"
+            aria-label="Close modal"
             className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
           >
             <span aria-hidden>✕</span>
@@ -148,14 +148,14 @@ export default function JsonPreviewModal({ payload, onClose }: Props) {
             onClick={onClose}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
           >
-            Fermer
+            Close
           </button>
           <button
             type="button"
             onClick={onCopy}
             className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
           >
-            {copyState.status === "copied" ? "Copié ✓" : "Copier"}
+            {copyState.status === "copied" ? "Copied ✓" : "Copy"}
           </button>
         </div>
       </div>

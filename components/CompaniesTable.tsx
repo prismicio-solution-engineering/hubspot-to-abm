@@ -22,14 +22,14 @@ export default function CompaniesTable({ records, portalId }: Props) {
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
           <tr>
-            <th className="px-3 py-2">Nom</th>
-            <th className="px-3 py-2">Domaine</th>
-            <th className="px-3 py-2">Téléphone</th>
-            <th className="px-3 py-2">Adresse</th>
-            <th className="px-3 py-2">Industrie</th>
-            <th className="px-3 py-2">Effectif</th>
-            <th className="px-3 py-2">Site web</th>
-            <th className="px-3 py-2 text-right">Ouvrir</th>
+            <th className="px-3 py-2">Name</th>
+            <th className="px-3 py-2">Domain</th>
+            <th className="px-3 py-2">Phone</th>
+            <th className="px-3 py-2">Address</th>
+            <th className="px-3 py-2">Industry</th>
+            <th className="px-3 py-2">Employees</th>
+            <th className="px-3 py-2">Website</th>
+            <th className="px-3 py-2 text-right">Open</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -61,9 +61,9 @@ export default function CompaniesTable({ records, portalId }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
-                  aria-label={`Ouvrir ${c.name ?? c.id} dans HubSpot`}
+                  aria-label={`Open ${c.name ?? c.id} in HubSpot`}
                 >
-                  Ouvrir ↗
+                  Open ↗
                 </a>
               </td>
             </tr>

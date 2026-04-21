@@ -18,7 +18,7 @@ export async function GET(
   const { id } = await params;
 
   if (!/^\d+$/.test(id)) {
-    return NextResponse.json({ error: "ID de liste invalide." }, { status: 400 });
+    return NextResponse.json({ error: "Invalid segment ID." }, { status: 400 });
   }
 
   try {
@@ -44,7 +44,7 @@ export async function GET(
     if (err instanceof HubSpotError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    const message = err instanceof Error ? err.message : "Erreur inconnue.";
+    const message = err instanceof Error ? err.message : "Unknown error.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

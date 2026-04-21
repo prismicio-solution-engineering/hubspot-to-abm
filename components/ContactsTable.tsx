@@ -77,9 +77,9 @@ export default function ContactsTable({
           role="status"
           className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900"
         >
-          Cette liste contient {records.length} contacts. La génération de pages
-          est limitée à {maxSelection} contacts par lot. Pour de meilleurs
-          résultats, créez une liste plus ciblée dans HubSpot.
+          This segment contains {records.length} contacts. Page generation is
+          limited to {maxSelection} contacts per batch. For best results,
+          create a more targeted segment in HubSpot.
         </div>
       )}
 
@@ -99,18 +99,18 @@ export default function ContactsTable({
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  aria-label="Sélectionner tous les contacts"
+                  aria-label="Select all contacts"
                   className="h-4 w-4 accent-blue-600"
                 />
               </th>
-              <th className="px-3 py-2">Prénom</th>
-              <th className="px-3 py-2">Nom</th>
+              <th className="px-3 py-2">First name</th>
+              <th className="px-3 py-2">Last name</th>
               <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Téléphone</th>
-              <th className="px-3 py-2">Adresse</th>
-              <th className="px-3 py-2">Entreprise</th>
-              <th className="px-3 py-2">Poste</th>
-              <th className="px-3 py-2 text-right">Ouvrir</th>
+              <th className="px-3 py-2">Phone</th>
+              <th className="px-3 py-2">Address</th>
+              <th className="px-3 py-2">Company</th>
+              <th className="px-3 py-2">Job title</th>
+              <th className="px-3 py-2 text-right">Open</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -130,7 +130,7 @@ export default function ContactsTable({
                       checked={isRowSelected}
                       disabled={isRowDisabled}
                       onChange={() => toggleRow(c.id)}
-                      aria-label={`Sélectionner ${displayName(c)}`}
+                      aria-label={`Select ${displayName(c)}`}
                       className="h-4 w-4 accent-blue-600 disabled:cursor-not-allowed"
                     />
                   </td>
@@ -155,9 +155,9 @@ export default function ContactsTable({
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
-                      aria-label={`Ouvrir ${displayName(c)} dans HubSpot`}
+                      aria-label={`Open ${displayName(c)} in HubSpot`}
                     >
-                      Ouvrir ↗
+                      Open ↗
                     </a>
                   </td>
                 </tr>

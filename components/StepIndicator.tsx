@@ -10,7 +10,7 @@ export default function StepIndicator() {
   const currentIndex = Math.max(0, getStepIndex(currentId));
 
   return (
-    <nav aria-label="Étapes de la campagne">
+    <nav aria-label="Campaign steps">
       <ol className="flex items-center">
         {CAMPAIGN_STEPS.map((step, i) => {
           const isCompleted = i < currentIndex;

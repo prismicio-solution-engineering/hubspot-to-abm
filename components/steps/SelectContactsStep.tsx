@@ -52,7 +52,7 @@ export default function SelectContactsStep() {
           const data = (await res.json().catch(() => ({}))) as ErrorResponse;
           setState({
             status: "error",
-            message: data.error ?? `Erreur ${res.status}.`,
+            message: data.error ?? `Error ${res.status}.`,
           });
           return;
         }
@@ -60,7 +60,7 @@ export default function SelectContactsStep() {
         setState({ status: "success", data });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
-        setState({ status: "error", message: "Erreur réseau." });
+        setState({ status: "error", message: "Network error." });
       }
     })();
 
@@ -98,17 +98,17 @@ export default function SelectContactsStep() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
           <p className="text-sm font-medium text-gray-400">
-            Aucun segment sélectionné.
+            No segment selected.
           </p>
           <p className="text-xs text-gray-400">
-             Revenez à l&apos;étape précédente pour en choisir un.
+            Go back to the previous step to pick one.
           </p>
         </div>
         <Link
           href="/campaigns/new?step=select-segment"
           className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
         >
-          Retour   à l&apos;étape 1
+          Back to step 1
         </Link>
       </div>
     );
@@ -122,7 +122,7 @@ export default function SelectContactsStep() {
           onClick={onBack}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
         >
-          Précédent
+          Back
         </button>
       </div>
       
@@ -156,7 +156,7 @@ export default function SelectContactsStep() {
             onClick={() => setReloadKey((k) => k + 1)}
             className="rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
           >
-            Réessayer
+            Retry
           </button>
         </div>
       )}
@@ -164,7 +164,7 @@ export default function SelectContactsStep() {
       {state.status === "success" &&
         (state.data.records.length === 0 ? (
           <p className="rounded-md border border-dashed border-gray-300 bg-white px-4 py-8 text-center text-sm text-gray-500">
-            Cette liste est vide.
+            This segment is empty.
           </p>
         ) : state.data.type === "contact" ? (
           <ContactsTable
