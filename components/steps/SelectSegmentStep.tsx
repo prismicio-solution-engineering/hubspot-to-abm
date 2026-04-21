@@ -31,33 +31,12 @@ export default function SelectSegmentStep() {
 
   const hasSelection = campaign.selectedList !== null;
   const sectionTitle = hasSelection
-    ? "Or search for a segment"
+    ? "Find a new segment"
     : "Find your segment";
 
   return (
     <div className="flex flex-col gap-6">
-      <SelectedSegmentBox />
-
-      <div className="flex flex-col gap-6">
-        <h2 className="text-sm font-medium text-gray-500">{sectionTitle}</h2>
-
-        <ListSearchBar
-          key={`search-${searchResetKey}`}
-          onListSelected={selectFromSearch}
-        />
-
-        <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-gray-400">
-          <span className="h-px flex-1 bg-gray-200" aria-hidden />
-          <span>ou</span>
-          <span className="h-px flex-1 bg-gray-200" aria-hidden />
-        </div>
-
-        <UrlInput
-          key={`url-${urlResetKey}`}
-          onListSelected={selectFromUrl}
-        />
-      </div>
-
+      
       <div className="flex justify-end">
         <button
           type="button"
@@ -67,6 +46,22 @@ export default function SelectSegmentStep() {
         >
           Continue
         </button>
+      </div>
+
+      <SelectedSegmentBox />
+
+      <div className="flex flex-col gap-6 p-6">
+        <h2 className="text-lg font-semibold text-gray-900">{sectionTitle}</h2>
+
+        <UrlInput
+          key={`url-${urlResetKey}`}
+          onListSelected={selectFromUrl}
+        />
+
+        <ListSearchBar
+          key={`search-${searchResetKey}`}
+          onListSelected={selectFromSearch}
+        />
       </div>
     </div>
   );

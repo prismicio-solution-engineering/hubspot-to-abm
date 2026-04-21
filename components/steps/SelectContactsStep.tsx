@@ -95,28 +95,52 @@ export default function SelectContactsStep() {
 
   if (!selectedList) {
     return (
-      <div className="flex flex-col items-start gap-4 rounded-md border border-dashed border-gray-300 bg-white px-4 py-8 text-sm text-gray-600">
-        <p>
-          Aucun segment sélectionné. Revenez à l&apos;étape précédente pour en
-          choisir un.
-        </p>
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
+          <p className="text-sm font-medium text-gray-400">
+            Aucun segment sélectionné.
+          </p>
+          <p className="text-xs text-gray-400">
+             Revenez à l&apos;étape précédente pour en choisir un.
+          </p>
+        </div>
         <Link
           href="/campaigns/new?step=select-segment"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
         >
-          Aller à l&apos;étape 1
+          Retour   à l&apos;étape 1
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center gap-3">
-        <h2 className="text-base font-semibold text-gray-900">
-          {selectedList.name}
-        </h2>
-        <TypeBadge type={selectedList.objectType} />
+    <div className="flex flex-col gap-6">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Précédent
+        </button>
+      </div>
+      
+      <header className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+            Selected segment
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-lg font-semibold text-gray-900">
+              {selectedList.name}
+            </span>
+            <TypeBadge type={selectedList.objectType} />
+          </div>
+          <span className="text-xs text-gray-600">
+            {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
+          </span>
+        </div>
       </header>
 
       {state.status === "loading" && <Skeleton />}
@@ -154,16 +178,6 @@ export default function SelectContactsStep() {
         ) : (
           <CompaniesTable records={state.data.records} portalId={portalId} />
         ))}
-
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Précédent
-        </button>
-      </div>
 
       <JsonPreviewModal payload={payload} onClose={() => setPayload(null)} />
     </div>

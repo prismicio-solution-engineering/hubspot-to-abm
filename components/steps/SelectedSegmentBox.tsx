@@ -28,7 +28,7 @@ export default function SelectedSegmentBox() {
     <section
       aria-label="Selected segment"
       aria-live="polite"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 border-l-4 border-l-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200"
     >
       <div className="flex flex-col gap-1">
         <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
