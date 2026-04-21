@@ -7,6 +7,8 @@ import JsonPreviewModal from "./JsonPreviewModal";
 import { buildPayload } from "@/lib/payload";
 import type { Contact, GeneratePagesPayload } from "@/lib/types";
 
+const MAX_SELECTION = 20;
+
 interface Props {
   records: Contact[];
   portalId: string;
@@ -38,9 +40,12 @@ export default function ContactsTable({
     setSelectedIds(new Set());
   }, [listId]);
 
+  const isLimitReached = selectedIds.size >= MAX_SELECTION;
+  const effectiveSelectAllTarget = Math.min(records.length, MAX_SELECTION);
   const allSelected = useMemo(
-    () => records.length > 0 && selectedIds.size === records.length,
-    [records.length, selectedIds.size],
+    () =>
+      records.length > 0 && selectedIds.size === effectiveSelectAllTarget,
+    [records.length, selectedIds.size, effectiveSelectAllTarget],
   );
   const someSelected = selectedIds.size > 0 && !allSelected;
 
@@ -53,16 +58,24 @@ export default function ContactsTable({
   function toggleAll() {
     if (allSelected) {
       setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(records.map((c) => c.id)));
+      return;
     }
+    setSelectedIds(
+      new Set(records.slice(0, MAX_SELECTION).map((c) => c.id)),
+    );
   }
 
   function toggleRow(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        return next;
+      }
+      if (next.size >= MAX_SELECTION) {
+        return prev;
+      }
+      next.add(id);
       return next;
     });
   }
@@ -73,7 +86,22 @@ export default function ContactsTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <GeneratePagesBar selectedCount={selectedIds.size} onGenerate={onGenerate} />
+      {records.length > MAX_SELECTION && (
+        <div
+          role="status"
+          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900"
+        >
+          Cette liste contient {records.length} contacts. La génération de pages
+          est limitée à {MAX_SELECTION} contacts par lot. Pour de meilleurs
+          résultats, créez une liste plus ciblée dans HubSpot.
+        </div>
+      )}
+
+      <GeneratePagesBar
+        selectedCount={selectedIds.size}
+        maxSelection={MAX_SELECTION}
+        onGenerate={onGenerate}
+      />
 
       <div className="overflow-x-auto rounded-md border border-gray-200 bg-white shadow-sm">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -101,16 +129,23 @@ export default function ContactsTable({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {records.map((c) => {
-              const checked = selectedIds.has(c.id);
+              const isRowSelected = selectedIds.has(c.id);
+              const isRowDisabled = isLimitReached && !isRowSelected;
+              const rowClass = isRowSelected
+                ? "bg-blue-50"
+                : isRowDisabled
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:bg-gray-50";
               return (
-                <tr key={c.id} className={checked ? "bg-blue-50" : "hover:bg-gray-50"}>
+                <tr key={c.id} className={rowClass}>
                   <td className="w-10 px-3 py-2">
                     <input
                       type="checkbox"
-                      checked={checked}
+                      checked={isRowSelected}
+                      disabled={isRowDisabled}
                       onChange={() => toggleRow(c.id)}
                       aria-label={`Sélectionner ${displayName(c)}`}
-                      className="h-4 w-4 accent-blue-600"
+                      className="h-4 w-4 accent-blue-600 disabled:cursor-not-allowed"
                     />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">{c.firstname ?? "—"}</td>
