@@ -6,13 +6,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import CompaniesTable from "../CompaniesTable";
 import ContactsTable from "../ContactsTable";
-import JsonPreviewModal from "../JsonPreviewModal";
 import TypeBadge from "../TypeBadge";
 import { useCampaign } from "@/lib/campaign-context";
 import { buildPayload } from "@/lib/payload";
 import type {
   ErrorResponse,
   GeneratePagesPayload,
+  RecommendationResponse,
   RecordsResponse,
 } from "@/lib/types";
 
@@ -24,15 +24,28 @@ type State =
   | { status: "error"; message: string }
   | { status: "success"; data: RecordsResponse };
 
+type GenerationState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string };
+
+interface GeneratePagesResponse {
+  recommendation: RecommendationResponse;
+  openAIResponseId: string;
+}
+
 export default function SelectContactsStep() {
   const router = useRouter();
-  const { campaign, portalId, setSelectedContactIds } = useCampaign();
+  const { campaign, portalId, setRecommendation, setSelectedContactIds } =
+    useCampaign();
   const { selectedList, selectedContactIds } = campaign;
   const listId = selectedList?.id ?? null;
 
   const [state, setState] = useState<State>({ status: "idle" });
   const [reloadKey, setReloadKey] = useState(0);
-  const [payload, setPayload] = useState<GeneratePagesPayload | null>(null);
+  const [generationState, setGenerationState] = useState<GenerationState>({
+    status: "idle",
+  });
 
   useEffect(() => {
     if (!listId) {
@@ -80,19 +93,50 @@ export default function SelectContactsStep() {
     setSelectedContactIds(Array.from(next));
   }
 
-  function onGenerate() {
+  async function onGenerate() {
     if (state.status !== "success" || state.data.type !== "contact") return;
     if (!selectedList) return;
-    if (!campaign.selectedPrismicDocument) return;
-    setPayload(
-      buildPayload(
-        state.data.records,
-        selectedIds,
-        campaign.selectedPrismicDocument,
-        selectedList.id,
-        selectedList.name,
-      ),
+    if (!campaign.selectedPrismicDocument) {
+      setGenerationState({
+        status: "error",
+        message: "Select a Prismic document before generating pages.",
+      });
+      return;
+    }
+
+    const requestPayload: GeneratePagesPayload = buildPayload(
+      state.data.records,
+      selectedIds,
+      campaign.selectedPrismicDocument,
+      selectedList.id,
+      selectedList.name,
     );
+
+    setGenerationState({ status: "loading" });
+
+    try {
+      const res = await fetch("/api/generate-pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as ErrorResponse;
+        setGenerationState({
+          status: "error",
+          message: data.error ?? `Generation failed (${res.status}).`,
+        });
+        return;
+      }
+
+      const data = (await res.json()) as GeneratePagesResponse;
+      setRecommendation(data.recommendation, data.openAIResponseId);
+      setGenerationState({ status: "idle" });
+      router.push("/campaigns/new?step=review-recommendations");
+    } catch {
+      setGenerationState({ status: "error", message: "Network error." });
+    }
   }
 
   if (!selectedList) {
@@ -182,13 +226,16 @@ export default function SelectContactsStep() {
             maxSelection={MAX_SELECTION}
             selectedIds={selectedIds}
             onSelectionChange={onSelectionChange}
+            isGenerating={generationState.status === "loading"}
+            generationError={
+              generationState.status === "error" ? generationState.message : null
+            }
             onGenerate={onGenerate}
           />
         ) : (
           <CompaniesTable records={state.data.records} portalId={portalId} />
         ))}
 
-      <JsonPreviewModal payload={payload} onClose={() => setPayload(null)} />
     </div>
   );
 }

@@ -11,7 +11,9 @@ interface Props {
   maxSelection: number;
   selectedIds: ReadonlySet<string>;
   onSelectionChange: (next: ReadonlySet<string>) => void;
-  onGenerate: () => void;
+  isGenerating?: boolean;
+  generationError?: string | null;
+  onGenerate: () => void | Promise<void>;
 }
 
 function formatAddress(c: Contact): string {
@@ -30,6 +32,8 @@ export default function ContactsTable({
   maxSelection,
   selectedIds,
   onSelectionChange,
+  isGenerating = false,
+  generationError = null,
   onGenerate,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -86,6 +90,8 @@ export default function ContactsTable({
       <GeneratePagesBar
         selectedCount={selectedIds.size}
         maxSelection={maxSelection}
+        isGenerating={isGenerating}
+        error={generationError}
         onGenerate={onGenerate}
       />
 

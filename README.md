@@ -76,7 +76,8 @@ Après login, l'utilisateur arrive sur la page d'accueil **ABM Campaigns** (CTA 
 
 1. **Select your Prismic Document** — Collage d'une URL de document Prismic. L'app extrait l'ID du document, récupère le master ref, puis charge uniquement les métadonnées du document via l'API Prismic.
 2. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
-3. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape précédente.
+3. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui lance l'agent OpenAI.
+4. **Review ABM Recommendations** — Affiche les recommandations générées sous forme de cartes avec les champs structurés et un bouton *Copy JSON*.
 
 Un indicateur d'étapes (stepper numéroté) est visible tout au long du flow. Les étapes validées apparaissent en bleu avec une coche ; l'étape courante est mise en évidence ; les étapes futures sont grisées. Le seul moyen de revenir en arrière est via le bouton *Précédent* dans chaque étape.
 
@@ -109,7 +110,7 @@ L'état de la campagne en cours est conservé dans un contexte React (`lib/campa
 
 ## Générer un payload pour un agent IA
 
-Depuis une liste de **contacts** (pas les companies), tu peux cocher un ou plusieurs contacts puis cliquer sur **Generate pages**. Une modale affiche le payload JSON prêt à envoyer, avec un bouton *Copier*.
+Depuis une liste de **contacts** (pas les companies), tu peux cocher un ou plusieurs contacts puis cliquer sur **Generate pages**. L'app appelle alors `/api/generate-pages`, récupère le document Prismic complet côté serveur, lance l'agent OpenAI avec web search, puis affiche le JSON de recommandation avec un bouton *Copier*.
 
 Format (versionné, stable) :
 
@@ -129,7 +130,7 @@ Les propriétés vides sont **omises** (pas de `null`, pas de chaîne vide) pour
 
 ### Évolution future
 
-Quand le mode d'envoi à l'agent sera décidé, il suffira d'ajouter un endpoint `POST /api/generate-pages` qui reçoit ce même payload et le relaie. Côté UI, il n'y aura qu'à remplacer la copie manuelle par un `fetch`. Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs.
+Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs. L'envoi à Prismic n'est pas encore implémenté : pour l'instant, l'endpoint retourne la recommandation JSON générée par OpenAI.
 
 ## Architecture du flow par étapes
 

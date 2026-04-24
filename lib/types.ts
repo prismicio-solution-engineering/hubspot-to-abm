@@ -97,3 +97,18 @@ export interface GeneratePagesPayload {
   };
   contacts: GeneratePagesContact[];
 }
+
+export interface RecommendationItem {
+  companyName: string;
+  firstName: string;
+  lastName: string;
+  position: string;
+  challenges: string[];
+  specificPainPoints: string[];
+  whyThisAccount: string;
+  personalizedInstructions: string;
+}
+
+export interface RecommendationResponse {
+  recommendationItems: RecommendationItem[];
+}

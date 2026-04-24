@@ -2,13 +2,19 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-import type { HubSpotList, PrismicDocumentMetadata } from "./types";
+import type {
+  HubSpotList,
+  PrismicDocumentMetadata,
+  RecommendationResponse,
+} from "./types";
 
 export interface CampaignState {
   id: string;
   selectedPrismicDocument: PrismicDocumentMetadata | null;
   selectedList: HubSpotList | null;
   selectedContactIds: string[];
+  recommendation: RecommendationResponse | null;
+  openAIResponseId: string | null;
 }
 
 interface CampaignContextValue {
@@ -17,6 +23,10 @@ interface CampaignContextValue {
   setSelectedPrismicDocument: (document: PrismicDocumentMetadata | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
+  setRecommendation: (
+    recommendation: RecommendationResponse | null,
+    openAIResponseId?: string | null,
+  ) => void;
   resetCampaign: () => void;
 }
 
@@ -28,6 +38,8 @@ function createEmptyCampaign(): CampaignState {
     selectedPrismicDocument: null,
     selectedList: null,
     selectedContactIds: [],
+    recommendation: null,
+    openAIResponseId: null,
   };
 }
 
@@ -48,15 +60,26 @@ export function CampaignProvider({ children, portalId }: ProviderProps) {
         selectedPrismicDocument: document,
         selectedList: null,
         selectedContactIds: [],
+        recommendation: null,
+        openAIResponseId: null,
       })),
     setSelectedList: (list) =>
       setCampaign((c) => ({
         ...c,
         selectedList: list,
         selectedContactIds: [],
+        recommendation: null,
+        openAIResponseId: null,
       })),
     setSelectedContactIds: (ids) =>
-      setCampaign((c) => ({ ...c, selectedContactIds: ids })),
+      setCampaign((c) => ({
+        ...c,
+        selectedContactIds: ids,
+        recommendation: null,
+        openAIResponseId: null,
+      })),
+    setRecommendation: (recommendation, openAIResponseId = null) =>
+      setCampaign((c) => ({ ...c, recommendation, openAIResponseId })),
     resetCampaign: () => setCampaign(createEmptyCampaign()),
   };
 

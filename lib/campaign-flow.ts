@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 
+import ReviewRecommendationsStep from "@/components/steps/ReviewRecommendationsStep";
 import SelectContactsStep from "@/components/steps/SelectContactsStep";
 import SelectPrismicDocumentStep from "@/components/steps/SelectPrismicDocumentStep";
 import SelectSegmentStep from "@/components/steps/SelectSegmentStep";
@@ -33,6 +34,13 @@ export const CAMPAIGN_STEPS: CampaignStep[] = [
     label: "Select contacts",
     title: "Select Contacts for Your Campaign",
     Component: SelectContactsStep,
+  },
+  {
+    id: "review-recommendations",
+    number: 4,
+    label: "Review",
+    title: "Review ABM Recommendations",
+    Component: ReviewRecommendationsStep,
   },
 ];
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { GeneratePagesPayload } from "@/lib/types";
-
 interface Props {
-  payload: GeneratePagesPayload | null;
+  payload: unknown | null;
+  title?: string;
+  subtitle?: string;
   onClose: () => void;
 }
 
@@ -47,7 +47,12 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export default function JsonPreviewModal({ payload, onClose }: Props) {
+export default function JsonPreviewModal({
+  payload,
+  title = "JSON ready",
+  subtitle,
+  onClose,
+}: Props) {
   const [copyState, setCopyState] = useState<CopyState>({ status: "idle" });
   const [visible, setVisible] = useState(false);
   const titleId = "json-preview-title";
@@ -79,9 +84,6 @@ export default function JsonPreviewModal({ payload, onClose }: Props) {
   }, [payload, onClose]);
 
   if (!payload) return null;
-
-  const count = payload.contacts.length;
-  const noun = count > 1 ? "contacts" : "contact";
 
   async function onCopy() {
     const ok = await copyText(json);
@@ -115,11 +117,9 @@ export default function JsonPreviewModal({ payload, onClose }: Props) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
             <h2 id={titleId} className="text-base font-semibold text-gray-900">
-              Payload ready to send
+              {title}
             </h2>
-            <p className="text-sm text-gray-500">
-              {count} {noun} from segment &ldquo;{payload.source.listName}&rdquo;
-            </p>
+            {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
           </div>
           <button
             type="button"
