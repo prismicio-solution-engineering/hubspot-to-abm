@@ -112,3 +112,17 @@ export interface RecommendationItem {
 export interface RecommendationResponse {
   recommendationItems: RecommendationItem[];
 }
+
+export interface PrismicGenerationResult {
+  release: {
+    id: string;
+    label: string;
+    url: string;
+  };
+  items: Array<{
+    companyName: string;
+    ok: boolean;
+    response: unknown;
+    error?: string;
+  }>;
+}

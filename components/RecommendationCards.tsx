@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { RecommendationItem, RecommendationResponse } from "@/lib/types";
 
+const MAX_PAIN_POINTS = 5;
+
 interface Props {
   recommendation: RecommendationResponse | null;
   openAIResponseId?: string | null;
@@ -371,6 +373,7 @@ function EditContent({
         <EditableList
           title="Specific pain points"
           items={draft.specificPainPoints}
+          maxItems={MAX_PAIN_POINTS}
           onAdd={() => onListAdd("specificPainPoints")}
           onChange={(i, value) => onListChange("specificPainPoints", i, value)}
           onRemove={(i) => onListRemove("specificPainPoints", i)}
@@ -503,14 +506,18 @@ function EditableList({
   items,
   onAdd,
   onChange,
+  maxItems,
   onRemove,
 }: {
   title: string;
   items: string[];
   onAdd: () => void;
   onChange: (index: number, value: string) => void;
+  maxItems?: number;
   onRemove: (index: number) => void;
 }) {
+  const isAtLimit = typeof maxItems === "number" && items.length >= maxItems;
+
   return (
     <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
       <div className="flex items-center justify-between gap-2">
@@ -520,9 +527,10 @@ function EditableList({
         <button
           type="button"
           onClick={onAdd}
-          className="rounded-md px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+          disabled={isAtLimit}
+          className="rounded-md px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
         >
-          Add
+          {isAtLimit ? `Max ${maxItems}` : "Add"}
         </button>
       </div>
       <div className="mt-2 flex flex-col gap-2">
