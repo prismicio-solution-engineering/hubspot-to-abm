@@ -27,6 +27,12 @@ interface CampaignContextValue {
     recommendation: RecommendationResponse | null,
     openAIResponseId?: string | null,
   ) => void;
+  updateRecommendationItem: (
+    index: number,
+    item: RecommendationResponse["recommendationItems"][number],
+  ) => void;
+  discardRecommendationItem: (index: number) => void;
+  addRecommendationItem: () => void;
   resetCampaign: () => void;
 }
 
@@ -80,6 +86,53 @@ export function CampaignProvider({ children, portalId }: ProviderProps) {
       })),
     setRecommendation: (recommendation, openAIResponseId = null) =>
       setCampaign((c) => ({ ...c, recommendation, openAIResponseId })),
+    updateRecommendationItem: (index, item) =>
+      setCampaign((c) => {
+        if (!c.recommendation) return c;
+        return {
+          ...c,
+          recommendation: {
+            recommendationItems: c.recommendation.recommendationItems.map((current, i) =>
+              i === index ? item : current,
+            ),
+          },
+        };
+      }),
+    discardRecommendationItem: (index) =>
+      setCampaign((c) => {
+        if (!c.recommendation) return c;
+        return {
+          ...c,
+          recommendation: {
+            recommendationItems: c.recommendation.recommendationItems.filter(
+              (_item, i) => i !== index,
+            ),
+          },
+        };
+      }),
+    addRecommendationItem: () =>
+      setCampaign((c) => {
+        const nextItem: RecommendationResponse["recommendationItems"][number] = {
+          companyName: "",
+          firstName: "",
+          lastName: "",
+          position: "",
+          challenges: [""],
+          specificPainPoints: [""],
+          whyThisAccount: "Manually added recommendation.",
+          personalizedInstructions: "",
+        };
+
+        return {
+          ...c,
+          recommendation: {
+            recommendationItems: [
+              ...(c.recommendation?.recommendationItems ?? []),
+              nextItem,
+            ],
+          },
+        };
+      }),
     resetCampaign: () => setCampaign(createEmptyCampaign()),
   };
 

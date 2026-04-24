@@ -6,7 +6,12 @@ import RecommendationCards from "../RecommendationCards";
 import { useCampaign } from "@/lib/campaign-context";
 
 export default function ReviewRecommendationsStep() {
-  const { campaign } = useCampaign();
+  const {
+    addRecommendationItem,
+    campaign,
+    discardRecommendationItem,
+    updateRecommendationItem,
+  } = useCampaign();
 
   if (!campaign.recommendation) {
     return (
@@ -43,6 +48,9 @@ export default function ReviewRecommendationsStep() {
       <RecommendationCards
         recommendation={campaign.recommendation}
         openAIResponseId={campaign.openAIResponseId}
+        onAddItem={addRecommendationItem}
+        onUpdateItem={updateRecommendationItem}
+        onDiscardItem={discardRecommendationItem}
       />
     </div>
   );

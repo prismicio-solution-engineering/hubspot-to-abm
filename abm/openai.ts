@@ -52,6 +52,8 @@ Extract:
 - Page sections and key content themes.
 - CTA wording if present.
 - Claims, capabilities, differentiators, and constraints.
+- The actual Prismic field and slice structure when visible in the JSON.
+- Important editable areas such as Hero, headline, subheadline, body/content sections, benefits, proof, FAQ, CTA, image alt/caption text, card titles, and section-level copy.
 
 Use this to shape:
 - challenges
@@ -60,6 +62,7 @@ Use this to shape:
 - personalizedInstructions
 
 If the Prismic document does not clearly state a capability, do not introduce it in personalizedInstructions.
+Do not invent Prismic field names. If exact field names are visible in the JSON, reference them. If exact field names are not visible, reference human-readable page areas such as Hero, CTA, Benefits, Proof, or FAQ.
 
 HOW TO USE HUBSPOT CONTACTS
 For every selected contact:
@@ -98,16 +101,24 @@ For each recommendation:
 - Keep all messaging natural, specific, and non-hypey.
 
 PERSONALIZED INSTRUCTIONS FIELD
-For each item, output personalizedInstructions as a concise directive prompt for a future ABM page personalization API.
+For each item, output personalizedInstructions as a concise directive prompt for a future Prismic ABM personalization API.
+
+This field is itself a downstream prompt. It should tell the next API how to personalize the selected Prismic base page for that target account and contact.
 
 Rules:
-- 2-5 sentences, max 70 words.
+- 3-7 sentences, max 130 words.
 - Imperative voice: "Write...", "Emphasize...", "Mention...", "De-risk...", "Avoid...".
 - Use the target company and role explicitly once.
 - Convert challenges into outcomes the page should highlight.
 - Convert pain points into 2-3 concrete page angles.
 - Include one clear CTA suggestion aligned with the Prismic page offer.
 - Prefer CTA wording from the Prismic document when available.
+- Use the Prismic document JSON to include detailed specifications for relevant page fields or sections.
+- When useful, name important fields/areas to personalize, such as Hero, headline, subheadline, section body copy, benefits, proof points, FAQ, CTA, or any exact slice/field names found in the Prismic JSON.
+- For Hero or headline fields, specify the target message, angle, and desired outcome.
+- For content/body sections, specify which pain points and challenges to address and which unsupported claims to avoid.
+- For CTA fields, specify the CTA intent and reuse Prismic CTA wording when available.
+- If a field or section is not relevant for the target, do not force instructions for it.
 - Do not invent customer names, certifications, metrics, or product claims.
 - Do not keyword-stack.
 
@@ -140,7 +151,7 @@ FIELD RULES
 - whyThisAccount must be one short sentence, 12-18 words.
 - challenges must contain 1-2 items.
 - specificPainPoints must contain 2-3 items.
-- personalizedInstructions must be concise and directly usable by another generation API.
+- personalizedInstructions must be concise and directly usable by the future Prismic ABM personalization API.
 `;
 
 export interface RunAbmWebSearchAgentOptions {
