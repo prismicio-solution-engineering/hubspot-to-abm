@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
   const loginUrl = req.nextUrl.clone();

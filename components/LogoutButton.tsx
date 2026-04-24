@@ -25,7 +25,7 @@ export default function LogoutButton() {
       disabled={loading}
       className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {loading ? "Déconnexion…" : "Se déconnecter"}
+      {loading ? "Signing out…" : "Sign out"}
     </button>
   );
 }

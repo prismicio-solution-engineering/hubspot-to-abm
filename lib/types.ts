@@ -7,6 +7,21 @@ export interface HubSpotList {
   size: number;
 }
 
+export interface PrismicDocumentMetadata {
+  id: string;
+  uid: string | null;
+  type: string;
+  lang: string;
+  url: string | null;
+  firstPublicationDate: string | null;
+  lastPublicationDate: string | null;
+}
+
+export interface PrismicDocument extends PrismicDocumentMetadata {
+  data: unknown;
+  raw: unknown;
+}
+
 export interface Contact {
   id: string;
   firstname?: string;
@@ -55,4 +70,59 @@ export interface SearchResponse {
 
 export interface ErrorResponse {
   error: string;
+}
+
+export interface GeneratePagesContact {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  jobTitle?: string;
+}
+
+export interface GeneratePagesPayload {
+  version: "1.0";
+  generatedAt: string;
+  target: {
+    type: "prismic_document";
+    documentId: string;
+    uid: string | null;
+    customType: string;
+    lang: string;
+  };
+  source: {
+    type: "hubspot_list";
+    listId: string;
+    listName: string;
+  };
+  contacts: GeneratePagesContact[];
+}
+
+export interface RecommendationItem {
+  companyName: string;
+  firstName: string;
+  lastName: string;
+  position: string;
+  challenges: string[];
+  specificPainPoints: string[];
+  whyThisAccount: string;
+  personalizedInstructions: string;
+}
+
+export interface RecommendationResponse {
+  recommendationItems: RecommendationItem[];
+}
+
+export interface PrismicGenerationResult {
+  release: {
+    id: string;
+    label: string;
+    url: string;
+  };
+  items: Array<{
+    companyName: string;
+    ok: boolean;
+    response: unknown;
+    error?: string;
+  }>;
 }

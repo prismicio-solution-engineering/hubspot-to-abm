@@ -69,29 +69,29 @@ function getClient(): Client {
 
 function translateError(status: number, body: string): HubSpotError {
   if (status === 401) {
-    return new HubSpotError(401, "unauthorized", "Token HubSpot invalide ou expiré.");
+    return new HubSpotError(401, "unauthorized", "Invalid or expired HubSpot token.");
   }
   if (status === 403) {
     return new HubSpotError(
       403,
       "unauthorized",
-      "Scope HubSpot manquant. Vérifie les scopes de la Private App.",
+      "Missing HubSpot scope. Check the Private App scopes.",
     );
   }
   if (status === 404) {
-    return new HubSpotError(404, "not_found", "Liste HubSpot introuvable.");
+    return new HubSpotError(404, "not_found", "HubSpot segment not found.");
   }
   if (status === 429) {
     return new HubSpotError(
       429,
       "rate_limited",
-      "Limite de taux HubSpot atteinte, réessayez dans un instant.",
+      "HubSpot rate limit reached. Please try again in a moment.",
     );
   }
   return new HubSpotError(
     status,
     "unknown",
-    `Erreur HubSpot (${status}): ${body.slice(0, 200)}`,
+    `HubSpot error (${status}): ${body.slice(0, 200)}`,
   );
 }
 
@@ -127,7 +127,7 @@ async function hubspotRequest<T>({ method, path, qs, body }: RequestOptions): Pr
     throw new HubSpotError(
       500,
       "unknown",
-      err instanceof Error ? err.message : "Erreur inconnue.",
+      err instanceof Error ? err.message : "Unknown error.",
     );
   }
 }
@@ -319,7 +319,7 @@ export async function getListMetadata(listId: string): Promise<HubSpotList> {
     throw new HubSpotError(
       422,
       "unsupported_object_type",
-      "Type d'objet non supporté (ni contact, ni company).",
+      "Unsupported object type (neither contact nor company).",
     );
   }
   return item;

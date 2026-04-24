@@ -22,7 +22,7 @@ export async function GET(req: Request) {
 
   if (name.length < 1) {
     return NextResponse.json(
-      { error: "Paramètre name requis (min 1 caractère)." },
+      { error: "The 'name' parameter is required (min 1 character)." },
       { status: 400 },
     );
   }
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     if (err instanceof HubSpotError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
-    const message = err instanceof Error ? err.message : "Erreur inconnue.";
+    const message = err instanceof Error ? err.message : "Unknown error.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
