@@ -1,45 +1,45 @@
 # ABM Campaigns
 
-Outil interne Next.js 15 pour préparer des campagnes ABM à partir de listes HubSpot : sélection d'un segment, choix des contacts, génération d'un payload JSON prêt à envoyer à un agent IA.
+Internal Next.js 15 tool for preparing ABM campaigns from HubSpot lists: segment selection, contact selection, and generation of a JSON payload ready to be sent to an AI agent.
 
-- Flow par étapes (wizard) avec indicateur d'étapes, routé par query param (`?step=…`).
-- Deux modes de sélection d'un segment : **recherche par nom** ou **collage d'une URL HubSpot**.
-- Le type d'objet (contact ou company) est **auto-détecté** à partir des métadonnées de la liste.
-- Authentification par mot de passe partagé (cookie httpOnly signé HMAC).
-- Pas de base de données : tout est récupéré en direct depuis HubSpot.
+- Step-by-step flow (wizard) with a step indicator, routed via a query param (`?step=…`).
+- Two segment selection modes: **search by name** or **paste a HubSpot URL**.
+- The object type (contact or company) is **auto-detected** from the list metadata.
+- Authentication via a shared password (HMAC-signed httpOnly cookie).
+- No database: everything is fetched live from HubSpot.
 
 ## Stack
 
 - Next.js 15 (App Router, TypeScript)
 - Tailwind CSS
 - `@hubspot/api-client` (via `Client.apiRequest`)
-- Cookie signé HMAC-SHA256 (Web Crypto) + middleware Next.js
+- HMAC-SHA256 signed cookie (Web Crypto) + Next.js middleware
 
-## 1. Créer la Private App HubSpot
+## 1. Create the HubSpot Private App
 
-1. Dans HubSpot, va dans **Settings → Integrations → Private Apps**.
-2. Clique sur **Create a private app** (ou ouvre l'app existante).
-3. Dans l'onglet **Scopes**, coche **obligatoirement** :
+1. In HubSpot, go to **Settings → Integrations → Private Apps**.
+2. Click **Create a private app** (or open the existing app).
+3. In the **Scopes** tab, **you must** check:
    - `crm.lists.read`
    - `crm.objects.contacts.read`
    - `crm.objects.companies.read`
-4. Crée l'app (ou clique **Save**) et copie l'**access token** (commence par `pat-`).
+4. Create the app (or click **Save**) and copy the **access token** (starts with `pat-`).
 
-### Mettre à jour une Private App existante
+### Updating an existing Private App
 
-Si tu avais déjà installé l'app sans le scope companies :
+If you had already installed the app without the companies scope:
 
-1. Ouvre la Private App dans HubSpot.
-2. Onglet **Scopes** → ajoute `crm.objects.companies.read`.
-3. Clique **Save** en haut à droite. Le token reste inchangé.
+1. Open the Private App in HubSpot.
+2. **Scopes** tab → add `crm.objects.companies.read`.
+3. Click **Save** at the top right. The token remains unchanged.
 
-## 2. Récupérer `HUBSPOT_PORTAL_ID`
+## 2. Get `HUBSPOT_PORTAL_ID`
 
-**Portal ID** : visible dans l'URL quand tu es connecté à HubSpot, sous la forme `https://app.hubspot.com/contacts/<PORTAL_ID>/...`. C'est le numéro après `/contacts/`.
+**Portal ID**: visible in the URL when you're logged into HubSpot, in the form `https://app.hubspot.com/contacts/<PORTAL_ID>/...`. It's the number after `/contacts/`.
 
-Aucun ID de liste à configurer manuellement : l'app lit les métadonnées au besoin.
+No list ID needs to be configured manually: the app reads metadata as needed.
 
-## 3. Configurer `.env.local`
+## 3. Configure `.env.local`
 
 ```bash
 cp .env.example .env.local
@@ -48,62 +48,62 @@ cp .env.example .env.local
 ```
 HUBSPOT_ACCESS_TOKEN=pat-xxx-xxxxxxxx
 HUBSPOT_PORTAL_ID=12345678
-APP_PASSWORD=un-mot-de-passe-fort
-SESSION_SECRET=une-longue-chaine-aleatoire-32-chars-min
+APP_PASSWORD=a-strong-password
+SESSION_SECRET=a-long-random-string-at-least-32-chars
 ```
 
-Pour générer un `SESSION_SECRET` solide :
+To generate a strong `SESSION_SECRET`:
 
 ```bash
 openssl rand -hex 32
 ```
 
-## 4. Lancer en local
+## 4. Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Ouvre [http://localhost:3000](http://localhost:3000). Tu es redirigé vers `/login`. Entre le mot de passe configuré dans `.env.local`.
+Open [http://localhost:3000](http://localhost:3000). You'll be redirected to `/login`. Enter the password configured in `.env.local`.
 
-## 5. Utilisation
+## 5. Usage
 
-Après login, l'utilisateur arrive sur la page d'accueil **ABM Campaigns** (CTA *Start generating*) qui le lance dans un flow par étapes à `/campaigns/new?step=<id>` :
+After logging in, the user lands on the **ABM Campaigns** homepage (CTA *Start generating*), which launches a step-by-step flow at `/campaigns/new?step=<id>`:
 
-1. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
-2. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape 1.
+1. **Select your HubSpot Segment** — Two selection modes (search by name / paste URL). Once a segment is chosen, it's displayed in a "Selected segment" container with a *Change* button, then *Continue* moves to the next step.
+2. **Select contacts** — Table of the list's contacts, selection of up to 20 contacts, *Generate pages* button that opens the JSON modal. *Back* button to return to step 1.
 
-Un indicateur d'étapes (stepper numéroté) est visible tout au long du flow. Les étapes validées apparaissent en bleu avec une coche ; l'étape courante est mise en évidence ; les étapes futures sont grisées. Le seul moyen de revenir en arrière est via le bouton *Précédent* dans chaque étape.
+A step indicator (numbered stepper) is visible throughout the flow. Completed steps appear in blue with a checkmark; the current step is highlighted; future steps are greyed out. The only way to go back is via the *Back* button in each step.
 
-L'état de la campagne en cours est conservé dans un contexte React (`lib/campaign-context.tsx`) pour toute la durée du flow. Un rafraîchissement de la page repart à l'étape 1 (pas de persistance pour l'instant).
+The state of the ongoing campaign is kept in a React context (`lib/campaign-context.tsx`) for the entire duration of the flow. Refreshing the page restarts from step 1 (no persistence for now).
 
-## 6. Déployer sur Vercel
+## 6. Deploy to Vercel
 
-1. Pousse le projet sur un repo Git.
-2. Sur Vercel, clique sur **New Project** et importe le repo.
-3. Dans **Settings → Environment Variables**, ajoute pour Production / Preview :
+1. Push the project to a Git repo.
+2. On Vercel, click **New Project** and import the repo.
+3. In **Settings → Environment Variables**, add for Production / Preview:
    - `HUBSPOT_ACCESS_TOKEN`
    - `HUBSPOT_PORTAL_ID`
    - `APP_PASSWORD`
    - `SESSION_SECRET`
-4. Déploie. Vercel détecte automatiquement Next.js.
+4. Deploy. Vercel automatically detects Next.js.
 
-## Architecture & sécurité
+## Architecture & security
 
-- `lib/hubspot.ts` : wrapper `server-only`. Expose `listAllLists`, `getListMetadata`, `getContactsForList`, `getCompaniesForList`. Traduit 401/403/404/422/429 en messages clairs.
-- `lib/session.ts` : cookies signés HMAC-SHA256 via Web Crypto (compatible Edge runtime).
-- `middleware.ts` : vérifie la signature du cookie sur toutes les routes sauf `/login` et `/api/auth/login`. Les API renvoient 401 JSON, les pages sont redirigées vers `/login`.
-- `app/api/lists/search/route.ts` : `GET ?name=…`, paginé côté HubSpot, tri par pertinence (exact → prefix → contains), top 10. Cache serveur 5 min.
-- `app/api/lists/[id]/route.ts` : `GET` métadonnées d'une liste (`id`, `name`, `objectType`, `size`). 422 si le type d'objet n'est ni contact ni company.
-- `app/api/segments/[id]/route.ts` : auto-détecte le type via `getListMetadata`, puis fait le batch read correspondant. Retourne `{ type, records, listName, listSize }`. Cache serveur 60 s.
-- Le token HubSpot reste côté serveur — aucun appel HubSpot depuis le navigateur.
+- `lib/hubspot.ts`: `server-only` wrapper. Exposes `listAllLists`, `getListMetadata`, `getContactsForList`, `getCompaniesForList`. Translates 401/403/404/422/429 into clear messages.
+- `lib/session.ts`: HMAC-SHA256 signed cookies via Web Crypto (Edge runtime compatible).
+- `middleware.ts`: verifies the cookie signature on all routes except `/login` and `/api/auth/login`. APIs return 401 JSON, pages are redirected to `/login`.
+- `app/api/lists/search/route.ts`: `GET ?name=…`, paginated on the HubSpot side, sorted by relevance (exact → prefix → contains), top 10. Server cache 5 min.
+- `app/api/lists/[id]/route.ts`: `GET` metadata for a list (`id`, `name`, `objectType`, `size`). 422 if the object type is neither contact nor company.
+- `app/api/segments/[id]/route.ts`: auto-detects the type via `getListMetadata`, then performs the corresponding batch read. Returns `{ type, records, listName, listSize }`. Server cache 60 s.
+- The HubSpot token stays on the server — no HubSpot calls from the browser.
 
-## Générer un payload pour un agent IA
+## Generating a payload for an AI agent
 
-Depuis une liste de **contacts** (pas les companies), tu peux cocher un ou plusieurs contacts puis cliquer sur **Generate pages**. Une modale affiche le payload JSON prêt à envoyer, avec un bouton *Copier*.
+From a list of **contacts** (not companies), you can check one or more contacts and then click **Generate pages**. A modal displays the ready-to-send JSON payload, with a *Copy* button.
 
-Format (versionné, stable) :
+Format (versioned, stable):
 
 ```json
 {
@@ -116,49 +116,49 @@ Format (versionné, stable) :
 }
 ```
 
-Les propriétés vides sont **omises** (pas de `null`, pas de chaîne vide) pour faciliter la consommation par l'agent IA. La fonction `buildPayload()` dans `lib/payload.ts` est pure et réutilisable.
+Empty properties are **omitted** (no `null`, no empty string) to make consumption by the AI agent easier. The `buildPayload()` function in `lib/payload.ts` is pure and reusable.
 
-### Évolution future
+### Future evolution
 
-Quand le mode d'envoi à l'agent sera décidé, il suffira d'ajouter un endpoint `POST /api/generate-pages` qui reçoit ce même payload et le relaie. Côté UI, il n'y aura qu'à remplacer la copie manuelle par un `fetch`. Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs.
+Once the delivery mode to the agent is decided, all that's needed is to add a `POST /api/generate-pages` endpoint that receives this same payload and relays it. On the UI side, the manual copy will simply be replaced with a `fetch`. The `version: "1.0"` field allows the format to evolve without breaking consumers.
 
-## Architecture du flow par étapes
+## Step-by-step flow architecture
 
-Le flow est piloté par une unique source de configuration : `lib/campaign-flow.ts`. Toute la mécanique (stepper, routeur d'étape, navigation) s'adapte automatiquement à cette liste.
+The flow is driven by a single source of configuration: `lib/campaign-flow.ts`. The entire mechanism (stepper, step router, navigation) adapts automatically to this list.
 
 ```
 app/
-├── page.tsx                          # Landing "ABM Campaigns"
+├── page.tsx                          # "ABM Campaigns" landing
 └── campaigns/new/
     ├── layout.tsx                    # <CampaignProvider> + <StepIndicator>
-    └── page.tsx                      # <Suspense> autour du routeur d'étape
+    └── page.tsx                      # <Suspense> around the step router
 components/
-├── CampaignStepRouter.tsx            # Lit ?step=… et rend l'étape correspondante
-├── StepIndicator.tsx                 # Stepper numéroté
+├── CampaignStepRouter.tsx            # Reads ?step=… and renders the matching step
+├── StepIndicator.tsx                 # Numbered stepper
 └── steps/
     ├── SelectSegmentStep.tsx
     └── SelectContactsStep.tsx
 lib/
-├── campaign-flow.ts                  # CAMPAIGN_STEPS (config des étapes)
+├── campaign-flow.ts                  # CAMPAIGN_STEPS (step config)
 └── campaign-context.tsx              # CampaignProvider / useCampaign
 ```
 
-### Ajouter une nouvelle étape
+### Adding a new step
 
-1. Créer le composant dans `components/steps/NewStep.tsx`.
-2. L'ajouter à `CAMPAIGN_STEPS` dans `lib/campaign-flow.ts` (id, number, label, title, Component).
+1. Create the component in `components/steps/NewStep.tsx`.
+2. Add it to `CAMPAIGN_STEPS` in `lib/campaign-flow.ts` (id, number, label, title, Component).
 
-Le stepper, le routeur d'étape et la navigation s'adaptent sans autre modification. Les composants d'étape ne connaissent pas leur position dans le flow : ils consomment `useCampaign()` pour l'état partagé et naviguent via `router.push("?step=...")`.
+The stepper, step router, and navigation adapt with no other changes required. Step components don't know their position in the flow: they consume `useCampaign()` for shared state and navigate via `router.push("?step=...")`.
 
-### Ajouter un champ à l'état de la campagne
+### Adding a field to the campaign state
 
-1. Ajouter le champ dans `CampaignState` (`lib/campaign-context.tsx`).
-2. Ajouter un setter dans `CampaignProvider`.
-3. Consommer via `useCampaign()` dans l'étape concernée.
+1. Add the field in `CampaignState` (`lib/campaign-context.tsx`).
+2. Add a setter in `CampaignProvider`.
+3. Consume via `useCampaign()` in the relevant step.
 
-### Persistance (évolution future)
+### Persistence (future evolution)
 
-L'état vit actuellement en mémoire (rechargement = retour à l'étape 1). Pour ajouter la persistance (localStorage, session, API, DB), il suffira de modifier `CampaignProvider` pour lire/écrire dans le store cible. Les composants qui consomment `useCampaign()` n'auront rien à changer.
+State currently lives in memory (reload = back to step 1). To add persistence (localStorage, session, API, DB), simply modify `CampaignProvider` to read/write to the target store. Components that consume `useCampaign()` won't need any changes.
 
 ## Build
 
