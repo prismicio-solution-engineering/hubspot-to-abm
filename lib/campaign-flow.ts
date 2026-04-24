@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 
 import SelectContactsStep from "@/components/steps/SelectContactsStep";
+import SelectPrismicDocumentStep from "@/components/steps/SelectPrismicDocumentStep";
 import SelectSegmentStep from "@/components/steps/SelectSegmentStep";
 
 export interface CampaignStep {
@@ -13,15 +14,22 @@ export interface CampaignStep {
 
 export const CAMPAIGN_STEPS: CampaignStep[] = [
   {
-    id: "select-segment",
+    id: "select-prismic-document",
     number: 1,
+    label: "Select document",
+    title: "Select Your Prismic Document",
+    Component: SelectPrismicDocumentStep,
+  },
+  {
+    id: "select-segment",
+    number: 2,
     label: "Select segment",
     title: "Select Your HubSpot Segment",
     Component: SelectSegmentStep,
   },
   {
     id: "select-contacts",
-    number: 2,
+    number: 3,
     label: "Select contacts",
     title: "Select Contacts for Your Campaign",
     Component: SelectContactsStep,

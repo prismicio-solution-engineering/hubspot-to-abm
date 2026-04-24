@@ -7,6 +7,18 @@ export interface HubSpotList {
   size: number;
 }
 
+export interface PrismicDocument {
+  id: string;
+  uid: string | null;
+  type: string;
+  lang: string;
+  url: string | null;
+  firstPublicationDate: string | null;
+  lastPublicationDate: string | null;
+  data: unknown;
+  raw: unknown;
+}
+
 export interface Contact {
   id: string;
   firstname?: string;
@@ -68,6 +80,14 @@ export interface GeneratePagesContact {
 export interface GeneratePagesPayload {
   version: "1.0";
   generatedAt: string;
+  target: {
+    type: "prismic_document";
+    documentId: string;
+    uid: string | null;
+    customType: string;
+    lang: string;
+    data: unknown;
+  };
   source: {
     type: "hubspot_list";
     listId: string;

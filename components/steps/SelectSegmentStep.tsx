@@ -29,15 +29,47 @@ export default function SelectSegmentStep() {
     router.push("/campaigns/new?step=select-contacts");
   }
 
+  function onBack() {
+    router.push("/campaigns/new?step=select-prismic-document");
+  }
+
   const hasSelection = campaign.selectedList !== null;
   const sectionTitle = hasSelection
     ? "Find a new segment"
     : "Find your segment";
 
+  if (!campaign.selectedPrismicDocument) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
+          <p className="text-sm font-medium text-gray-400">
+            No Prismic document selected.
+          </p>
+          <p className="text-xs text-gray-400">
+            Go back to the previous step to pick one.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Back to step 1
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      
-      <div className="flex justify-end">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Back
+        </button>
         <button
           type="button"
           onClick={onContinue}

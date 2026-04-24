@@ -83,10 +83,12 @@ export default function SelectContactsStep() {
   function onGenerate() {
     if (state.status !== "success" || state.data.type !== "contact") return;
     if (!selectedList) return;
+    if (!campaign.selectedPrismicDocument) return;
     setPayload(
       buildPayload(
         state.data.records,
         selectedIds,
+        campaign.selectedPrismicDocument,
         selectedList.id,
         selectedList.name,
       ),
@@ -128,6 +130,13 @@ export default function SelectContactsStep() {
       
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200">
         <div className="flex flex-col gap-1">
+          {campaign.selectedPrismicDocument && (
+            <span className="text-xs text-gray-600">
+              Prismic document:{" "}
+              {campaign.selectedPrismicDocument.uid ??
+                campaign.selectedPrismicDocument.id}
+            </span>
+          )}
           <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
             Selected segment
           </span>

@@ -2,10 +2,11 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-import type { HubSpotList } from "./types";
+import type { HubSpotList, PrismicDocument } from "./types";
 
 export interface CampaignState {
   id: string;
+  selectedPrismicDocument: PrismicDocument | null;
   selectedList: HubSpotList | null;
   selectedContactIds: string[];
 }
@@ -13,6 +14,7 @@ export interface CampaignState {
 interface CampaignContextValue {
   campaign: CampaignState;
   portalId: string;
+  setSelectedPrismicDocument: (document: PrismicDocument | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
   resetCampaign: () => void;
@@ -23,6 +25,7 @@ const CampaignContext = createContext<CampaignContextValue | null>(null);
 function createEmptyCampaign(): CampaignState {
   return {
     id: crypto.randomUUID(),
+    selectedPrismicDocument: null,
     selectedList: null,
     selectedContactIds: [],
   };
@@ -39,6 +42,13 @@ export function CampaignProvider({ children, portalId }: ProviderProps) {
   const value: CampaignContextValue = {
     campaign,
     portalId,
+    setSelectedPrismicDocument: (document) =>
+      setCampaign((c) => ({
+        ...c,
+        selectedPrismicDocument: document,
+        selectedList: null,
+        selectedContactIds: [],
+      })),
     setSelectedList: (list) =>
       setCampaign((c) => ({
         ...c,

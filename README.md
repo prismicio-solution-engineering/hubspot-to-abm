@@ -1,8 +1,9 @@
 # ABM Campaigns
 
-Outil interne Next.js 15 pour préparer des campagnes ABM à partir de listes HubSpot : sélection d'un segment, choix des contacts, génération d'un payload JSON prêt à envoyer à un agent IA.
+Outil interne Next.js 15 pour préparer des campagnes ABM à partir d'un document Prismic et de listes HubSpot : sélection d'un document cible, sélection d'un segment, choix des contacts, génération d'un payload JSON prêt à envoyer à un agent IA.
 
 - Flow par étapes (wizard) avec indicateur d'étapes, routé par query param (`?step=…`).
+- Sélection d'un document Prismic cible par collage d'URL.
 - Deux modes de sélection d'un segment : **recherche par nom** ou **collage d'une URL HubSpot**.
 - Le type d'objet (contact ou company) est **auto-détecté** à partir des métadonnées de la liste.
 - Authentification par mot de passe partagé (cookie httpOnly signé HMAC).
@@ -50,6 +51,8 @@ HUBSPOT_ACCESS_TOKEN=pat-xxx-xxxxxxxx
 HUBSPOT_PORTAL_ID=12345678
 APP_PASSWORD=un-mot-de-passe-fort
 SESSION_SECRET=une-longue-chaine-aleatoire-32-chars-min
+PRISMIC_REPOSITORY=template-landing
+PRISMIC_MASTER_TOKEN=MC5...
 ```
 
 Pour générer un `SESSION_SECRET` solide :
@@ -71,8 +74,9 @@ Ouvre [http://localhost:3000](http://localhost:3000). Tu es redirigé vers `/log
 
 Après login, l'utilisateur arrive sur la page d'accueil **ABM Campaigns** (CTA *Start generating*) qui le lance dans un flow par étapes à `/campaigns/new?step=<id>` :
 
-1. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
-2. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape 1.
+1. **Select your Prismic Document** — Collage d'une URL de document Prismic. L'app extrait l'ID du document, récupère le master ref, puis charge le JSON du document via l'API Prismic.
+2. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
+3. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape précédente.
 
 Un indicateur d'étapes (stepper numéroté) est visible tout au long du flow. Les étapes validées apparaissent en bleu avec une coche ; l'étape courante est mise en évidence ; les étapes futures sont grisées. Le seul moyen de revenir en arrière est via le bouton *Précédent* dans chaque étape.
 
@@ -87,15 +91,19 @@ L'état de la campagne en cours est conservé dans un contexte React (`lib/campa
    - `HUBSPOT_PORTAL_ID`
    - `APP_PASSWORD`
    - `SESSION_SECRET`
+   - `PRISMIC_REPOSITORY`
+   - `PRISMIC_MASTER_TOKEN`
 4. Déploie. Vercel détecte automatiquement Next.js.
 
 ## Architecture & sécurité
 
 - `lib/hubspot.ts` : wrapper `server-only`. Expose `listAllLists`, `getListMetadata`, `getContactsForList`, `getCompaniesForList`. Traduit 401/403/404/422/429 en messages clairs.
+- `lib/prismic.ts` : wrapper `server-only`. Lit `PRISMIC_REPOSITORY` et `PRISMIC_MASTER_TOKEN`, récupère le master ref, puis cherche un document par ID.
 - `lib/session.ts` : cookies signés HMAC-SHA256 via Web Crypto (compatible Edge runtime).
 - `middleware.ts` : vérifie la signature du cookie sur toutes les routes sauf `/login` et `/api/auth/login`. Les API renvoient 401 JSON, les pages sont redirigées vers `/login`.
 - `app/api/lists/search/route.ts` : `GET ?name=…`, paginé côté HubSpot, tri par pertinence (exact → prefix → contains), top 10. Cache serveur 5 min.
 - `app/api/lists/[id]/route.ts` : `GET` métadonnées d'une liste (`id`, `name`, `objectType`, `size`). 422 si le type d'objet n'est ni contact ni company.
+- `app/api/prismic/documents/[id]/route.ts` : `GET` document Prismic par ID. Retourne le JSON normalisé du document et son `data`.
 - `app/api/segments/[id]/route.ts` : auto-détecte le type via `getListMetadata`, puis fait le batch read correspondant. Retourne `{ type, records, listName, listSize }`. Cache serveur 60 s.
 - Le token HubSpot reste côté serveur — aucun appel HubSpot depuis le navigateur.
 
@@ -109,6 +117,14 @@ Format (versionné, stable) :
 {
   "version": "1.0",
   "generatedAt": "2026-04-20T14:32:00.000Z",
+  "target": {
+    "type": "prismic_document",
+    "documentId": "…",
+    "uid": "landing-page",
+    "customType": "page",
+    "lang": "en-us",
+    "data": {}
+  },
   "source": { "type": "hubspot_list", "listId": "…", "listName": "…" },
   "contacts": [
     { "id": "123", "firstName": "Jean", "lastName": "Dupont", "company": "Acme", "jobTitle": "CMO" }

@@ -22,7 +22,7 @@ export default function HomePage() {
         </div>
 
         <Link
-          href="/campaigns/new?step=select-segment"
+          href="/campaigns/new?step=select-prismic-document"
           className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
         >
           Start generating
