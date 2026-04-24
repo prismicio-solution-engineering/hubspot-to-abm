@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getPrismicDocument, PrismicError } from "@/lib/prismic";
+import { getPrismicDocumentMetadata, PrismicError } from "@/lib/prismic";
 
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -20,7 +20,7 @@ export async function GET(
   }
 
   try {
-    const document = await getPrismicDocument(documentId);
+    const document = await getPrismicDocumentMetadata(documentId);
     return NextResponse.json(document);
   } catch (err) {
     if (err instanceof PrismicError) {

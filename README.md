@@ -74,7 +74,7 @@ Ouvre [http://localhost:3000](http://localhost:3000). Tu es redirigé vers `/log
 
 Après login, l'utilisateur arrive sur la page d'accueil **ABM Campaigns** (CTA *Start generating*) qui le lance dans un flow par étapes à `/campaigns/new?step=<id>` :
 
-1. **Select your Prismic Document** — Collage d'une URL de document Prismic. L'app extrait l'ID du document, récupère le master ref, puis charge le JSON du document via l'API Prismic.
+1. **Select your Prismic Document** — Collage d'une URL de document Prismic. L'app extrait l'ID du document, récupère le master ref, puis charge uniquement les métadonnées du document via l'API Prismic.
 2. **Select your HubSpot Segment** — Deux modes de sélection (recherche par nom / collage d'URL). Une fois un segment choisi, il s'affiche dans un container "Selected segment" avec un bouton *Change*, puis *Continue* mène à l'étape suivante.
 3. **Select contacts** — Tableau des contacts de la liste, sélection jusqu'à 20 contacts, bouton *Generate pages* qui ouvre la modale JSON. Bouton *Précédent* pour revenir à l'étape précédente.
 
@@ -117,14 +117,7 @@ Format (versionné, stable) :
 {
   "version": "1.0",
   "generatedAt": "2026-04-20T14:32:00.000Z",
-  "target": {
-    "type": "prismic_document",
-    "documentId": "…",
-    "uid": "landing-page",
-    "customType": "page",
-    "lang": "en-us",
-    "data": {}
-  },
+  "target": { "type": "prismic_document", "documentId": "…", "uid": "landing-page", "customType": "page", "lang": "en-us" },
   "source": { "type": "hubspot_list", "listId": "…", "listName": "…" },
   "contacts": [
     { "id": "123", "firstName": "Jean", "lastName": "Dupont", "company": "Acme", "jobTitle": "CMO" }

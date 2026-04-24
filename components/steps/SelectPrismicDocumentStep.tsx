@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import PrismicUrlInput from "../PrismicUrlInput";
 import SelectedPrismicDocumentBox from "./SelectedPrismicDocumentBox";
 import { useCampaign } from "@/lib/campaign-context";
-import type { PrismicDocument } from "@/lib/types";
+import type { PrismicDocumentMetadata } from "@/lib/types";
 
 export default function SelectPrismicDocumentStep() {
   const router = useRouter();
   const { campaign, setSelectedPrismicDocument } = useCampaign();
 
-  function onDocumentSelected(document: PrismicDocument) {
+  function onDocumentSelected(document: PrismicDocumentMetadata) {
     setSelectedPrismicDocument(document);
   }
 

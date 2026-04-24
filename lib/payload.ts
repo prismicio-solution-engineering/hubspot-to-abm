@@ -2,7 +2,7 @@ import type {
   Contact,
   GeneratePagesContact,
   GeneratePagesPayload,
-  PrismicDocument,
+  PrismicDocumentMetadata,
 } from "./types";
 
 function toPayloadContact(c: Contact): GeneratePagesContact {
@@ -17,7 +17,7 @@ function toPayloadContact(c: Contact): GeneratePagesContact {
 export function buildPayload(
   contacts: readonly Contact[],
   selectedIds: ReadonlySet<string>,
-  prismicDocument: PrismicDocument,
+  prismicDocument: PrismicDocumentMetadata,
   listId: string,
   listName: string,
   now: Date = new Date(),
@@ -35,7 +35,6 @@ export function buildPayload(
       uid: prismicDocument.uid,
       customType: prismicDocument.type,
       lang: prismicDocument.lang,
-      data: prismicDocument.data,
     },
     source: {
       type: "hubspot_list",

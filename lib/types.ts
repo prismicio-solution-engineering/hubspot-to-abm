@@ -7,7 +7,7 @@ export interface HubSpotList {
   size: number;
 }
 
-export interface PrismicDocument {
+export interface PrismicDocumentMetadata {
   id: string;
   uid: string | null;
   type: string;
@@ -15,6 +15,9 @@ export interface PrismicDocument {
   url: string | null;
   firstPublicationDate: string | null;
   lastPublicationDate: string | null;
+}
+
+export interface PrismicDocument extends PrismicDocumentMetadata {
   data: unknown;
   raw: unknown;
 }
@@ -86,7 +89,6 @@ export interface GeneratePagesPayload {
     uid: string | null;
     customType: string;
     lang: string;
-    data: unknown;
   };
   source: {
     type: "hubspot_list";

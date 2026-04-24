@@ -2,10 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 
-import type { ErrorResponse, PrismicDocument } from "@/lib/types";
+import type { ErrorResponse, PrismicDocumentMetadata } from "@/lib/types";
 
 interface Props {
-  onDocumentSelected: (document: PrismicDocument) => void;
+  onDocumentSelected: (document: PrismicDocumentMetadata) => void;
 }
 
 function extractDocumentIdFromUrl(value: string): string | null {
@@ -62,7 +62,7 @@ export default function PrismicUrlInput({ onDocumentSelected }: Props) {
         });
         return;
       }
-      const document = (await res.json()) as PrismicDocument;
+      const document = (await res.json()) as PrismicDocumentMetadata;
       setState({ status: "idle" });
       setUrl("");
       onDocumentSelected(document);

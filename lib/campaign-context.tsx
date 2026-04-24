@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 
-import type { HubSpotList, PrismicDocument } from "./types";
+import type { HubSpotList, PrismicDocumentMetadata } from "./types";
 
 export interface CampaignState {
   id: string;
-  selectedPrismicDocument: PrismicDocument | null;
+  selectedPrismicDocument: PrismicDocumentMetadata | null;
   selectedList: HubSpotList | null;
   selectedContactIds: string[];
 }
@@ -14,7 +14,7 @@ export interface CampaignState {
 interface CampaignContextValue {
   campaign: CampaignState;
   portalId: string;
-  setSelectedPrismicDocument: (document: PrismicDocument | null) => void;
+  setSelectedPrismicDocument: (document: PrismicDocumentMetadata | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
   resetCampaign: () => void;

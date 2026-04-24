@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { PrismicDocument } from "./types";
+import type { PrismicDocument, PrismicDocumentMetadata } from "./types";
 
 class PrismicError extends Error {
   constructor(
@@ -85,7 +85,7 @@ async function getMasterRef(): Promise<string> {
   return master.ref;
 }
 
-function toPrismicDocument(doc: RawPrismicDocument): PrismicDocument {
+function toPrismicDocumentMetadata(doc: RawPrismicDocument): PrismicDocumentMetadata {
   return {
     id: doc.id,
     uid: doc.uid ?? null,
@@ -94,6 +94,12 @@ function toPrismicDocument(doc: RawPrismicDocument): PrismicDocument {
     url: doc.url ?? null,
     firstPublicationDate: doc.first_publication_date ?? null,
     lastPublicationDate: doc.last_publication_date ?? null,
+  };
+}
+
+function toPrismicDocument(doc: RawPrismicDocument): PrismicDocument {
+  return {
+    ...toPrismicDocumentMetadata(doc),
     data: doc.data,
     raw: doc,
   };
@@ -118,4 +124,19 @@ export async function getPrismicDocument(documentId: string): Promise<PrismicDoc
   }
 
   return toPrismicDocument(doc);
+}
+
+export async function getPrismicDocumentMetadata(
+  documentId: string,
+): Promise<PrismicDocumentMetadata> {
+  const document = await getPrismicDocument(documentId);
+  return {
+    id: document.id,
+    uid: document.uid,
+    type: document.type,
+    lang: document.lang,
+    url: document.url,
+    firstPublicationDate: document.firstPublicationDate,
+    lastPublicationDate: document.lastPublicationDate,
+  };
 }
