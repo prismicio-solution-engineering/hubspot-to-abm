@@ -8,7 +8,6 @@ const CONTACT_PROPERTIES = [
   "firstname",
   "lastname",
   "email",
-  "phone",
   "address",
   "city",
   "zip",
@@ -20,7 +19,6 @@ const CONTACT_PROPERTIES = [
 const COMPANY_PROPERTIES = [
   "name",
   "domain",
-  "phone",
   "address",
   "city",
   "zip",
@@ -163,6 +161,17 @@ interface BatchReadResponse {
   }>;
 }
 
+interface AssociationsBatchReadResponse {
+  results: Array<{
+    from?: { id?: string } | string;
+    to?: Array<{
+      id?: string;
+      toObjectId?: string | number;
+      to?: { id?: string };
+    }>;
+  }>;
+}
+
 function nonEmpty(value: string | null | undefined): string | undefined {
   if (value == null) return undefined;
   const trimmed = value.trim();
@@ -176,7 +185,6 @@ function toContact(entry: BatchReadResponse["results"][number]): Contact {
     firstname: nonEmpty(p.firstname),
     lastname: nonEmpty(p.lastname),
     email: nonEmpty(p.email),
-    phone: nonEmpty(p.phone),
     address: nonEmpty(p.address),
     city: nonEmpty(p.city),
     zip: nonEmpty(p.zip),
@@ -192,7 +200,6 @@ function toCompany(entry: BatchReadResponse["results"][number]): Company {
     id: entry.id,
     name: nonEmpty(p.name),
     domain: nonEmpty(p.domain),
-    phone: nonEmpty(p.phone),
     address: nonEmpty(p.address),
     city: nonEmpty(p.city),
     zip: nonEmpty(p.zip),
@@ -227,9 +234,86 @@ async function batchRead<T>(
   return out;
 }
 
+function getAssociationFromId(
+  result: AssociationsBatchReadResponse["results"][number],
+): string | undefined {
+  if (typeof result.from === "string") return result.from;
+  return result.from?.id;
+}
+
+function getAssociationToId(
+  result: AssociationsBatchReadResponse["results"][number],
+): string | undefined {
+  const first = result.to?.[0];
+  if (!first) return undefined;
+  const id = first.toObjectId ?? first.id ?? first.to?.id;
+  return id == null ? undefined : String(id);
+}
+
+async function getPrimaryCompanyIdsForContacts(
+  contactIds: string[],
+): Promise<Map<string, string>> {
+  const associations = new Map<string, string>();
+  if (contactIds.length === 0) return associations;
+
+  for (let i = 0; i < contactIds.length; i += 100) {
+    const chunk = contactIds.slice(i, i + 100);
+    const data = await hubspotRequest<AssociationsBatchReadResponse>({
+      method: "POST",
+      path: "/crm/v4/associations/contacts/companies/batch/read",
+      body: {
+        inputs: chunk.map((id) => ({ id })),
+      },
+    });
+
+    for (const result of data.results) {
+      const contactId = getAssociationFromId(result);
+      const companyId = getAssociationToId(result);
+      if (contactId && companyId) associations.set(contactId, companyId);
+    }
+  }
+
+  return associations;
+}
+
+async function enrichContactsWithCompanies(contacts: Contact[]): Promise<Contact[]> {
+  try {
+    const companyIdsByContact = await getPrimaryCompanyIdsForContacts(
+      contacts.map((contact) => contact.id),
+    );
+    const companyIds = Array.from(new Set(companyIdsByContact.values()));
+    const companies = await batchRead("company", companyIds, COMPANY_PROPERTIES, toCompany);
+    const companiesById = new Map(companies.map((company) => [company.id, company]));
+
+    return contacts.map((contact) => {
+      const companyId = companyIdsByContact.get(contact.id);
+      const associatedCompany = companyId ? companiesById.get(companyId) : undefined;
+      if (!associatedCompany) return contact;
+      return {
+        ...contact,
+        company: contact.company ?? associatedCompany.name,
+        associatedCompany,
+      };
+    });
+  } catch (err) {
+    if (
+      err instanceof HubSpotError &&
+      (err.status === 400 || err.status === 403 || err.status === 404)
+    ) {
+      console.warn(
+        "Skipping HubSpot company association enrichment:",
+        err.message,
+      );
+      return contacts;
+    }
+    throw err;
+  }
+}
+
 export async function getContactsForList(listId: string): Promise<Contact[]> {
   const ids = await getListMemberships(listId);
-  return batchRead("contact", ids, CONTACT_PROPERTIES, toContact);
+  const contacts = await batchRead("contact", ids, CONTACT_PROPERTIES, toContact);
+  return enrichContactsWithCompanies(contacts);
 }
 
 export async function getCompaniesForList(listId: string): Promise<Company[]> {

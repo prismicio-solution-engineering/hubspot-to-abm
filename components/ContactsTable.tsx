@@ -26,6 +26,30 @@ function displayName(c: Contact): string {
   return [c.firstname, c.lastname].filter(Boolean).join(" ") || "—";
 }
 
+function displayCompany(c: Contact): string {
+  return c.associatedCompany?.name ?? c.company ?? "—";
+}
+
+function companyDetails(c: Contact): Array<{ label: string; value: string }> {
+  const company = c.associatedCompany;
+  if (!company) return [];
+
+  return [
+    { label: "Domain", value: company.domain },
+    { label: "Website", value: company.website },
+    { label: "Industry", value: company.industry },
+    { label: "Employees", value: company.numberofemployees },
+    { label: "Country", value: company.country },
+    { label: "City", value: company.city },
+    {
+      label: "Address",
+      value: [company.address, company.zip].filter(Boolean).join(", "),
+    },
+  ].filter((item): item is { label: string; value: string } =>
+    Boolean(item.value),
+  );
+}
+
 export default function ContactsTable({
   records,
   portalId,
@@ -112,7 +136,6 @@ export default function ContactsTable({
               <th className="px-3 py-2">First name</th>
               <th className="px-3 py-2">Last name</th>
               <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Phone</th>
               <th className="px-3 py-2">Address</th>
               <th className="px-3 py-2">Company</th>
               <th className="px-3 py-2">Job title</th>
@@ -123,6 +146,7 @@ export default function ContactsTable({
             {records.map((c) => {
               const isRowSelected = selectedIds.has(c.id);
               const isRowDisabled = isLimitReached && !isRowSelected;
+              const details = companyDetails(c);
               const rowClass = isRowSelected
                 ? "bg-blue-50"
                 : isRowDisabled
@@ -151,9 +175,26 @@ export default function ContactsTable({
                       "—"
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2">{c.phone ?? "—"}</td>
                   <td className="px-3 py-2">{formatAddress(c) || "—"}</td>
-                  <td className="px-3 py-2">{c.company ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    <div className="flex min-w-56 flex-col gap-1">
+                      <span className="font-medium text-gray-900">
+                        {displayCompany(c)}
+                      </span>
+                      {details.length > 0 && (
+                        <div className="flex flex-col gap-0.5 text-xs text-gray-500">
+                          {details.map((detail) => (
+                            <span key={detail.label}>
+                              <span className="font-medium text-gray-600">
+                                {detail.label}:
+                              </span>{" "}
+                              {detail.value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-3 py-2">{c.jobtitle ?? "—"}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-right">
                     <a

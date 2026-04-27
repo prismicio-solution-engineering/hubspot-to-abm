@@ -24,7 +24,6 @@ export default function CompaniesTable({ records, portalId }: Props) {
           <tr>
             <th className="px-3 py-2">Name</th>
             <th className="px-3 py-2">Domain</th>
-            <th className="px-3 py-2">Phone</th>
             <th className="px-3 py-2">Address</th>
             <th className="px-3 py-2">Industry</th>
             <th className="px-3 py-2">Employees</th>
@@ -37,7 +36,6 @@ export default function CompaniesTable({ records, portalId }: Props) {
             <tr key={c.id} className="hover:bg-gray-50">
               <td className="whitespace-nowrap px-3 py-2">{c.name ?? "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{c.domain ?? "—"}</td>
-              <td className="whitespace-nowrap px-3 py-2">{c.phone ?? "—"}</td>
               <td className="px-3 py-2">{formatAddress(c) || "—"}</td>
               <td className="px-3 py-2">{c.industry ?? "—"}</td>
               <td className="whitespace-nowrap px-3 py-2">{c.numberofemployees ?? "—"}</td>

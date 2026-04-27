@@ -66,12 +66,17 @@ Do not invent Prismic field names. If exact field names are visible in the JSON,
 
 HOW TO USE HUBSPOT CONTACTS
 For every selected contact:
-- companyName must come from the contact company field when available.
+- If associatedCompany is present, treat it as the authoritative HubSpot Company record for account research.
+- Use associatedCompany fields such as name, domain, website, industry, numberofemployees, country, city, and address as grounding signals when present.
+- companyName must come from associatedCompany.name when available, otherwise from the contact company field when available.
+- companyDomain must come from HubSpot when available. Use it as the preferred starting point for company web research.
+- companyIndustry must come from HubSpot when available. Use it as a grounding signal, but verify or refine it through web research when needed.
 - firstName must come from the contact firstname/firstName field when available.
 - lastName must come from the contact lastname/lastName field when available.
 - position must come from the contact jobtitle/jobTitle/title field when available.
 
 If companyName is missing, still return an item for the contact, but keep company-specific analysis conservative.
+If companyDomain, associatedCompany.domain, or associatedCompany.website is present, prefer it as the starting point for web research.
 
 PROSPECT ANALYSIS PER CONTACT COMPANY
 For each company, infer:
@@ -147,7 +152,7 @@ Return exactly this structure:
 
 FIELD RULES
 - recommendationItems length must equal the number of selected HubSpot contacts.
-- companyName, firstName, lastName, and position must reflect HubSpot input when available.
+- companyName, firstName, lastName, and position must reflect HubSpot input when available. For companyName, prefer associatedCompany.name over the contact company text.
 - whyThisAccount must be one short sentence, 12-18 words.
 - challenges must contain 1-2 items.
 - specificPainPoints must contain 2-3 items.

@@ -27,20 +27,19 @@ export interface Contact {
   firstname?: string;
   lastname?: string;
   email?: string;
-  phone?: string;
   address?: string;
   city?: string;
   zip?: string;
   country?: string;
   company?: string;
   jobtitle?: string;
+  associatedCompany?: Company;
 }
 
 export interface Company {
   id: string;
   name?: string;
   domain?: string;
-  phone?: string;
   address?: string;
   city?: string;
   zip?: string;
@@ -77,7 +76,10 @@ export interface GeneratePagesContact {
   firstName?: string;
   lastName?: string;
   company?: string;
+  companyDomain?: string;
+  companyIndustry?: string;
   jobTitle?: string;
+  associatedCompany?: Company;
 }
 
 export interface GeneratePagesPayload {

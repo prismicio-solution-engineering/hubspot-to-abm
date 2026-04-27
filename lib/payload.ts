@@ -10,7 +10,10 @@ function toPayloadContact(c: Contact): GeneratePagesContact {
   if (c.firstname) out.firstName = c.firstname;
   if (c.lastname) out.lastName = c.lastname;
   if (c.company) out.company = c.company;
+  if (c.associatedCompany?.domain) out.companyDomain = c.associatedCompany.domain;
+  if (c.associatedCompany?.industry) out.companyIndustry = c.associatedCompany.industry;
   if (c.jobtitle) out.jobTitle = c.jobtitle;
+  if (c.associatedCompany) out.associatedCompany = c.associatedCompany;
   return out;
 }
 
