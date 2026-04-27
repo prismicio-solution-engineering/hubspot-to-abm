@@ -50,8 +50,6 @@ function normalizeRecommendation(value: unknown): RecommendationResponse {
       specificPainPoints: Array.isArray(item.specificPainPoints)
         ? item.specificPainPoints.filter((v): v is string => typeof v === "string")
         : [],
-      whyThisAccount:
-        typeof item.whyThisAccount === "string" ? item.whyThisAccount : "",
       personalizedInstructions:
         typeof item.personalizedInstructions === "string"
           ? item.personalizedInstructions

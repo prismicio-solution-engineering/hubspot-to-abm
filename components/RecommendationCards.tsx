@@ -180,10 +180,7 @@ function RecommendationCard({
   }
 
   function saveEdit() {
-    onUpdate?.(index, {
-      ...draft,
-      whyThisAccount: item.whyThisAccount,
-    });
+    onUpdate?.(index, draft);
     setIsEditing(false);
   }
 
@@ -275,7 +272,6 @@ function RecommendationCard({
           {isEditing ? (
             <EditContent
               draft={draft}
-              whyThisAccount={item.whyThisAccount}
               onCancel={() => setIsEditing(false)}
               onSave={saveEdit}
               onTextChange={updateText}
@@ -305,7 +301,6 @@ function ViewContent({ item }: { item: RecommendationItem }) {
           title="Personalized instructions"
           value={item.personalizedInstructions}
         />
-        <NoteBlock title="Why this account" value={item.whyThisAccount} />
       </div>
     </>
   );
@@ -313,7 +308,6 @@ function ViewContent({ item }: { item: RecommendationItem }) {
 
 function EditContent({
   draft,
-  whyThisAccount,
   onCancel,
   onSave,
   onTextChange,
@@ -322,7 +316,6 @@ function EditContent({
   onListRemove,
 }: {
   draft: RecommendationItem;
-  whyThisAccount: string;
   onCancel: () => void;
   onSave: () => void;
   onTextChange: <K extends keyof RecommendationItem>(
@@ -386,8 +379,6 @@ function EditContent({
         onChange={(value) => onTextChange("personalizedInstructions", value)}
       />
 
-      <NoteBlock title="Why this account" value={whyThisAccount} />
-
       <div className="flex justify-end gap-2">
         <button
           type="button"
@@ -439,19 +430,6 @@ function FieldBlock({ title, value }: { title: string; value: string }) {
         {title}
       </h4>
       <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-700">
-        {value || "No value returned."}
-      </p>
-    </div>
-  );
-}
-
-function NoteBlock({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-        {title}
-      </h4>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-amber-900">
         {value || "No value returned."}
       </p>
     </div>

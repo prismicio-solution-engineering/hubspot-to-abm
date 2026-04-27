@@ -58,7 +58,6 @@ Extract:
 Use this to shape:
 - challenges
 - specificPainPoints
-- whyThisAccount
 - personalizedInstructions
 
 If the Prismic document does not clearly state a capability, do not introduce it in personalizedInstructions.
@@ -144,7 +143,6 @@ Return exactly this structure:
       "position": "...",
       "challenges": ["..."],
       "specificPainPoints": ["...", "..."],
-      "whyThisAccount": "...",
       "personalizedInstructions": "..."
     }
   ]
@@ -153,7 +151,6 @@ Return exactly this structure:
 FIELD RULES
 - recommendationItems length must equal the number of selected HubSpot contacts.
 - companyName, firstName, lastName, and position must reflect HubSpot input when available. For companyName, prefer associatedCompany.name over the contact company text.
-- whyThisAccount must be one short sentence, 12-18 words.
 - challenges must contain 1-2 items.
 - specificPainPoints must contain 2-3 items.
 - personalizedInstructions must be concise and directly usable by the future Prismic ABM personalization API.

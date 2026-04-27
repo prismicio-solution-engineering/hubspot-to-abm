@@ -119,7 +119,6 @@ export function CampaignProvider({ children, portalId }: ProviderProps) {
           position: "",
           challenges: [""],
           specificPainPoints: [""],
-          whyThisAccount: "Manually added recommendation.",
           personalizedInstructions: "",
         };
 

@@ -107,7 +107,6 @@ export interface RecommendationItem {
   position: string;
   challenges: string[];
   specificPainPoints: string[];
-  whyThisAccount: string;
   personalizedInstructions: string;
 }
 
