@@ -69,7 +69,6 @@ export default function ListSearchBar({ onListSelected }: Props) {
         <input
           id="list-search"
           type="text"
-          autoFocus
           autoComplete="off"
           value={query}
           onChange={(e) => setQuery(e.target.value)}

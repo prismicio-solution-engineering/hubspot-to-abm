@@ -13,6 +13,7 @@ export default function SelectPrismicDocumentStep() {
 
   function onDocumentSelected(document: PrismicDocumentMetadata) {
     setSelectedPrismicDocument(document);
+    router.push("/campaigns/new?step=select-segment");
   }
 
   function onContinue() {
@@ -34,14 +35,14 @@ export default function SelectPrismicDocumentStep() {
         </button>
       </div>
 
-      <SelectedPrismicDocumentBox />
-
       <div className="flex flex-col gap-6 p-6">
         <h2 className="text-lg font-semibold text-gray-900">
           Find your Prismic document
         </h2>
         <PrismicUrlInput onDocumentSelected={onDocumentSelected} />
       </div>
+
+      <SelectedPrismicDocumentBox />
     </div>
   );
 }

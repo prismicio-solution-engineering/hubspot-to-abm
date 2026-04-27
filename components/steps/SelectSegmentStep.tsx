@@ -18,11 +18,13 @@ export default function SelectSegmentStep() {
   function selectFromSearch(list: HubSpotList) {
     setUrlResetKey((k) => k + 1);
     setSelectedList(list);
+    router.push("/campaigns/new?step=select-contacts");
   }
 
   function selectFromUrl(list: HubSpotList) {
     setSearchResetKey((k) => k + 1);
     setSelectedList(list);
+    router.push("/campaigns/new?step=select-contacts");
   }
 
   function onContinue() {
@@ -80,8 +82,6 @@ export default function SelectSegmentStep() {
         </button>
       </div>
 
-      <SelectedSegmentBox />
-
       <div className="flex flex-col gap-6 p-6">
         <h2 className="text-lg font-semibold text-gray-900">{sectionTitle}</h2>
 
@@ -95,6 +95,8 @@ export default function SelectSegmentStep() {
           onListSelected={selectFromSearch}
         />
       </div>
+
+      <SelectedSegmentBox />
     </div>
   );
 }

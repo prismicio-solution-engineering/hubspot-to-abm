@@ -71,6 +71,7 @@ export default function UrlInput({ onListSelected }: Props) {
         <input
           id="list-url"
           type="url"
+          autoFocus
           autoComplete="off"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
