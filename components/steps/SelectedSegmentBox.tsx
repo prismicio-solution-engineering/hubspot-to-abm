@@ -14,14 +14,11 @@ export default function SelectedSegmentBox() {
       <section
         aria-label="Selected segment"
         aria-live="polite"
-        className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center"
+        className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border border-border rounded-lg text-center"
       >
-        <Users className="h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm font-medium text-muted-foreground">
+        <Users className="w-8 h-8 text-muted-foreground/40" />
+        <p className="font-medium text-muted-foreground text-sm">
           No segment selected yet
-        </p>
-        <p className="text-xs text-muted-foreground/70">
-          Search by name or paste a HubSpot URL above.
         </p>
       </section>
     );
@@ -31,21 +28,21 @@ export default function SelectedSegmentBox() {
     <section
       aria-label="Selected segment"
       aria-live="polite"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-accent px-4 py-4"
+      className="flex flex-wrap justify-between items-center gap-3 bg-accent px-4 py-4 border border-primary/30 rounded-lg"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
-          <Users className="h-4 w-4 text-primary" />
+        <div className="flex justify-center items-center bg-primary/10 mt-0.5 rounded-md w-8 h-8 shrink-0">
+          <Users className="w-4 h-4 text-primary" />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+          <span className="font-semibold text-primary text-xs uppercase tracking-wide">
             Selected segment
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{selectedList.name}</span>
+            <span className="font-semibold text-foreground text-sm">{selectedList.name}</span>
             <TypeBadge type={selectedList.objectType} />
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
           </span>
         </div>
@@ -57,7 +54,7 @@ export default function SelectedSegmentBox() {
         onClick={() => setSelectedList(null)}
         aria-label="Change selected segment"
       >
-        Change
+Delete
       </Button>
     </section>
   );

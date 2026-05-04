@@ -18,27 +18,27 @@ function websiteHref(url: string): string {
 
 export default function CompaniesTable({ records, portalId }: Props) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
-      <table className="min-w-full divide-y divide-border text-sm">
+    <div className="bg-card shadow-sm border border-border rounded-lg overflow-x-auto">
+      <table className="divide-y divide-border min-w-full text-sm">
         <thead>
           <tr className="bg-muted/50">
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</th>
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Domain</th>
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Address</th>
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Industry</th>
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Employees</th>
-            <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Website</th>
-            <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Open</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Name</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Domain</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Address</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Industry</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Employees</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Website</th>
+            <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-right uppercase tracking-wide">Open</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
           {records.map((c) => (
-            <tr key={c.id} className="transition-colors hover:bg-muted/30">
-              <td className="whitespace-nowrap px-4 py-2.5 text-foreground">{c.name ?? "—"}</td>
-              <td className="whitespace-nowrap px-4 py-2.5 text-muted-foreground">{c.domain ?? "—"}</td>
+            <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+              <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.name ?? "—"}</td>
+              <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{c.domain ?? "—"}</td>
               <td className="px-4 py-2.5 text-muted-foreground">{formatAddress(c) || "—"}</td>
               <td className="px-4 py-2.5 text-muted-foreground">{c.industry ?? "—"}</td>
-              <td className="whitespace-nowrap px-4 py-2.5 text-muted-foreground">{c.numberofemployees ?? "—"}</td>
+              <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{c.numberofemployees ?? "—"}</td>
               <td className="px-4 py-2.5">
                 {c.website ? (
                   <a
@@ -53,7 +53,7 @@ export default function CompaniesTable({ records, portalId }: Props) {
                   <span className="text-muted-foreground">—</span>
                 )}
               </td>
-              <td className="whitespace-nowrap px-4 py-2.5 text-right">
+              <td className="px-4 py-2.5 text-right whitespace-nowrap">
                 <a
                   href={`https://app.hubspot.com/contacts/${portalId}/company/${c.id}`}
                   target="_blank"

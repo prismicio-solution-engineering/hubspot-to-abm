@@ -1,36 +1,38 @@
-import Link from "next/link";
+import { Search } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
-import { buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import NewCampaignDialog from "@/components/NewCampaignDialog";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex h-14 items-center justify-between border-b border-border px-6">
+    <div className="flex flex-col bg-background min-h-screen">
+      <header className="flex justify-between items-center px-6 border-border border-b h-14">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded bg-primary">
+          <div className="flex justify-center items-center bg-primary rounded w-7 h-7">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
               <path d="M2 12l10 5 10-5" />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-foreground">ABM Campaigns</span>
+          <span className="font-semibold text-foreground text-sm">ABM Campaigns</span>
         </div>
-        <LogoutButton />
+        <div className="flex flex-1 items-center gap-3 px-6">
+          <div className="relative flex-1 w-full">
+            <Search className="top-1/2 left-3 absolute w-4 h-4 text-muted-foreground -translate-y-1/2" />
+            <Input
+              placeholder="Search for a campaign"
+              className="bg-white pl-9 h-10 text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <NewCampaignDialog />
+          <LogoutButton />
+        </div>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
-        <div className="flex max-w-md flex-col gap-3">
-          <h2 className="text-2xl font-semibold text-foreground">
-            Generate ABM pages
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Create personalised ABM pages from HubSpot segments and your Prismic documents.
-          </p>
-        </div>
-        <Link href="/campaigns/new?step=select-prismic-document" className={buttonVariants({ size: "lg" })}>
-          Start generating
-        </Link>
+      <main className="flex-1 px-6 py-6">
       </main>
     </div>
   );

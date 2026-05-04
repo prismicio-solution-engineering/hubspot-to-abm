@@ -86,6 +86,7 @@ async function getMasterRef(): Promise<string> {
 }
 
 function toPrismicDocumentMetadata(doc: RawPrismicDocument): PrismicDocumentMetadata {
+  const data = doc.data as Record<string, unknown> | null | undefined;
   return {
     id: doc.id,
     uid: doc.uid ?? null,
@@ -94,6 +95,7 @@ function toPrismicDocumentMetadata(doc: RawPrismicDocument): PrismicDocumentMeta
     url: doc.url ?? null,
     firstPublicationDate: doc.first_publication_date ?? null,
     lastPublicationDate: doc.last_publication_date ?? null,
+    metaTitle: typeof data?.meta_title === "string" ? data.meta_title : null,
   };
 }
 

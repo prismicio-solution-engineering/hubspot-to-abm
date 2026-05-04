@@ -1,10 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import ListSearchBar from "../ListSearchBar";
-import UrlInput from "../UrlInput";
+import SegmentCombobox from "../SegmentCombobox";
 import SelectedSegmentBox from "./SelectedSegmentBox";
 import { useCampaign } from "@/lib/campaign-context";
 import type { HubSpotList } from "@/lib/types";
@@ -12,19 +10,9 @@ import type { HubSpotList } from "@/lib/types";
 export default function SelectSegmentStep() {
   const router = useRouter();
   const { campaign, setSelectedList } = useCampaign();
-  const [searchResetKey, setSearchResetKey] = useState(0);
-  const [urlResetKey, setUrlResetKey] = useState(0);
 
-  function selectFromSearch(list: HubSpotList) {
-    setUrlResetKey((k) => k + 1);
+  function onSegmentSelected(list: HubSpotList) {
     setSelectedList(list);
-    router.push("/campaigns/new?step=select-contacts");
-  }
-
-  function selectFromUrl(list: HubSpotList) {
-    setSearchResetKey((k) => k + 1);
-    setSelectedList(list);
-    router.push("/campaigns/new?step=select-contacts");
   }
 
   function onContinue() {
@@ -40,11 +28,11 @@ export default function SelectSegmentStep() {
   if (!campaign.selectedPrismicDocument) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
-          <p className="text-sm font-medium text-muted-foreground">
+        <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
+          <p className="font-medium text-muted-foreground text-sm">
             No Prismic document selected.
           </p>
-          <p className="text-xs text-muted-foreground/70">
+          <p className="text-muted-foreground/70 text-xs">
             Go back to the previous step to pick one.
           </p>
         </div>
@@ -57,17 +45,8 @@ export default function SelectSegmentStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 shadow-sm">
-        <UrlInput key={`url-${urlResetKey}`} onListSelected={selectFromUrl} />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
-          </div>
-        </div>
-        <ListSearchBar key={`search-${searchResetKey}`} onListSelected={selectFromSearch} />
+      <div className="flex flex-col gap-4 bg-card shadow-sm p-5 border border-border rounded-lg">
+        <SegmentCombobox onSegmentSelected={onSegmentSelected} />
       </div>
 
       <SelectedSegmentBox />

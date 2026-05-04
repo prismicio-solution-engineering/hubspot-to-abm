@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, ChevronDown, FileText, Loader2 } from "lucide-react";
+import { Search, ChevronDown, FileText } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ErrorResponse, PrismicDocumentMetadata } from "@/lib/types";
@@ -14,31 +14,56 @@ interface Props {
   onDocumentSelected: (document: PrismicDocumentMetadata) => void;
 }
 
+let cachedDocuments: PrismicDocumentMetadata[] | null = null;
+let fetchPromise: Promise<PrismicDocumentMetadata[]> | null = null;
+
+function fetchDocuments(): Promise<PrismicDocumentMetadata[]> {
+  if (cachedDocuments) return Promise.resolve(cachedDocuments);
+  if (fetchPromise) return fetchPromise;
+
+  fetchPromise = fetch("/api/prismic/documents?type=landing")
+    .then(async (res) => {
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as ErrorResponse;
+        throw new Error(data.error ?? `Error ${res.status}`);
+      }
+      return res.json() as Promise<DocumentsResponse>;
+    })
+    .then(({ documents }) => {
+      cachedDocuments = documents;
+      return documents;
+    })
+    .catch((err) => {
+      fetchPromise = null;
+      throw err;
+    });
+
+  return fetchPromise;
+}
+
 export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
   const [query, setQuery] = useState("");
-  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>(cachedDocuments ?? []);
+  const [loading, setLoading] = useState(cachedDocuments === null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<PrismicDocumentMetadata | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+    if (open) inputRef.current?.focus();
+    else setQuery("");
+  }, [open]);
 
-    fetch("/api/prismic/documents?type=landing")
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as ErrorResponse;
-          throw new Error(data.error ?? `Error ${res.status}`);
-        }
-        return res.json() as Promise<DocumentsResponse>;
-      })
-      .then(({ documents }) => {
+  useEffect(() => {
+    if (cachedDocuments) return;
+    let cancelled = false;
+
+    fetchDocuments()
+      .then((docs) => {
         if (!cancelled) {
-          setDocuments(documents);
+          setDocuments(docs);
           setLoading(false);
         }
       })
@@ -68,6 +93,7 @@ export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
     ? documents.filter((doc) => {
         const q = query.toLowerCase();
         return (
+          (doc.metaTitle ?? "").toLowerCase().includes(q) ||
           (doc.uid ?? "").toLowerCase().includes(q) ||
           doc.type.toLowerCase().includes(q) ||
           doc.lang.toLowerCase().includes(q)
@@ -82,111 +108,112 @@ export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
     onDocumentSelected(doc);
   }
 
-  const displayValue = selected ? (selected.uid ?? selected.id) : "";
-
+  const displayValue = selected
+    ? (selected.metaTitle ?? selected.uid ?? selected.id)
+    : "";
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
-      <label className="text-sm font-medium text-foreground">
+      <label className="font-medium text-foreground text-sm">
         Select a landing document
       </label>
 
       <div className="relative">
         <button
           type="button"
-          onClick={() => {
-            if (!loading) setOpen((v) => !v);
-          }}
+          onClick={() => setOpen((v) => !v)}
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm transition-colors",
+            "flex justify-between items-center gap-2 bg-background px-3 border rounded-md w-full h-9 text-sm transition-colors",
             open ? "border-ring ring-2 ring-ring ring-offset-1" : "border-input hover:border-ring/50",
-            loading && "opacity-50 cursor-not-allowed"
           )}
           aria-expanded={open}
           aria-haspopup="listbox"
-          disabled={loading}
         >
-          {loading ? (
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading documents…
-            </span>
-          ) : selected ? (
+          {selected ? (
             <span className="flex items-center gap-2 truncate">
-              <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span className="truncate font-medium text-foreground">{displayValue}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{selected.lang}</span>
+              <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="font-medium text-foreground truncate">{displayValue}</span>
+              <span className="text-muted-foreground text-xs shrink-0">{selected.lang}</span>
             </span>
           ) : (
             <span className="text-muted-foreground">
-              {documents.length > 0
-                ? `${documents.length} documents available…`
-                : "No documents found"}
+              {loading
+                ? "Select a document…"
+                : documents.length > 0
+                  ? `${documents.length} documents available…`
+                  : "No documents found"}
             </span>
           )}
           <ChevronDown
             className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              "w-4 h-4 text-muted-foreground transition-transform shrink-0",
               open && "rotate-180"
             )}
           />
         </button>
 
-        {open && (
-          <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-lg">
-            <div className="border-b border-border px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <input
-                  autoFocus
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Filter documents…"
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-              </div>
+        <div className={cn("z-50 absolute bg-card shadow-lg mt-1 border border-border rounded-md w-full overflow-hidden", !open && "hidden")}>
+          <div className="px-3 py-2 border-border border-b">
+            <div className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter documents…"
+                className="bg-transparent outline-none w-full placeholder:text-muted-foreground text-sm"
+              />
             </div>
-
-            {error ? (
-              <p className="px-3 py-3 text-sm text-destructive">{error}</p>
-            ) : filtered.length === 0 ? (
-              <p className="px-3 py-3 text-sm text-muted-foreground">
-                {query ? `No result for "${query}"` : "No documents available"}
-              </p>
-            ) : (
-              <ul
-                role="listbox"
-                className="max-h-60 overflow-y-auto py-1"
-              >
-                {filtered.map((doc) => (
-                  <li key={doc.id} role="option" aria-selected={selected?.id === doc.id}>
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(doc)}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
-                        selected?.id === doc.id && "bg-accent"
-                      )}
-                    >
-                      <FileText className={cn(
-                        "h-4 w-4 shrink-0",
-                        selected?.id === doc.id ? "text-primary" : "text-muted-foreground"
-                      )} />
-                      <span className="flex flex-1 flex-col gap-0.5 truncate">
-                        <span className="truncate font-medium text-foreground">
-                          {doc.uid ?? doc.id}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {doc.type} · {doc.lang}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
-        )}
+
+          {loading ? (
+            <ul className="py-1">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-3 px-3 py-2">
+                  <div className="bg-muted rounded w-4 h-4 shrink-0 animate-pulse" />
+                  <span className="flex flex-col flex-1 gap-1.5">
+                    <span className="bg-muted rounded w-2/3 h-3 animate-pulse" />
+                    <span className="bg-muted rounded w-1/3 h-2.5 animate-pulse" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : error ? (
+            <p className="px-3 py-3 text-destructive text-sm">{error}</p>
+          ) : filtered.length === 0 ? (
+            <p className="px-3 py-3 text-muted-foreground text-sm">
+              {query ? `No result for "${query}"` : "No documents available"}
+            </p>
+          ) : (
+            <ul role="listbox" className="py-1 max-h-60 overflow-y-auto">
+              {filtered.map((doc) => (
+                <li key={doc.id} role="option" aria-selected={selected?.id === doc.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(doc)}
+                    className={cn(
+                      "flex items-center gap-3 hover:bg-muted px-3 py-2 w-full text-sm text-left transition-colors",
+                      selected?.id === doc.id && "bg-accent"
+                    )}
+                  >
+                    <FileText className={cn(
+                      "w-4 h-4 shrink-0",
+                      selected?.id === doc.id ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    <span className="flex flex-col flex-1 gap-0.5 truncate">
+                      <span className="font-medium text-foreground truncate">
+                        {doc.metaTitle ?? doc.uid ?? doc.id}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {doc.uid ?? doc.id} · {doc.lang}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

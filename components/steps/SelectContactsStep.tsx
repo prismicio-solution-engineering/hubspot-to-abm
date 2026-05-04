@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import CompaniesTable from "../CompaniesTable";
 import ContactsTable from "../ContactsTable";
+import GeneratingModal from "../GeneratingModal";
 import TypeBadge from "../TypeBadge";
 import { useCampaign } from "@/lib/campaign-context";
 import { buildPayload } from "@/lib/payload";
@@ -143,13 +144,13 @@ export default function SelectContactsStep() {
   if (!selectedList) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
-          <p className="text-sm font-medium text-muted-foreground">No segment selected.</p>
-          <p className="text-xs text-muted-foreground/70">Go back to the previous step to pick one.</p>
+        <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
+          <p className="font-medium text-muted-foreground text-sm">No segment selected.</p>
+          <p className="text-muted-foreground/70 text-xs">Go back to the previous step to pick one.</p>
         </div>
         <Link
           href="/campaigns/new?step=select-segment"
-          className="w-fit rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+          className="bg-card hover:bg-muted shadow-sm px-4 py-2 border border-border rounded-md w-fit font-medium text-foreground text-sm transition-colors"
         >
           Back to step 2
         </Link>
@@ -159,16 +160,17 @@ export default function SelectContactsStep() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <GeneratingModal open={generationState.status === "loading"} />
+      <div className="flex justify-between items-center">
         <Button type="button" variant="outline" size="sm" onClick={onBack}>
           Back
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/30 bg-accent px-4 py-3">
-        <div className="flex flex-col gap-0.5 flex-1">
+      <div className="flex flex-wrap items-center gap-3 bg-accent px-4 py-3 border border-primary/30 rounded-lg">
+        <div className="flex flex-col flex-1 gap-0.5">
           {campaign.selectedPrismicDocument && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               Document:{" "}
               <span className="font-medium text-foreground">
                 {campaign.selectedPrismicDocument.uid ?? campaign.selectedPrismicDocument.id}
@@ -176,10 +178,10 @@ export default function SelectContactsStep() {
             </span>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{selectedList.name}</span>
+            <span className="font-semibold text-foreground text-sm">{selectedList.name}</span>
             <TypeBadge type={selectedList.objectType} />
           </div>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
           </span>
         </div>
@@ -190,13 +192,13 @@ export default function SelectContactsStep() {
       {state.status === "error" && (
         <div
           role="alert"
-          className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="flex flex-wrap items-center gap-3 bg-destructive/5 px-4 py-3 border border-destructive/20 rounded-lg text-destructive text-sm"
         >
           <span>{state.message}</span>
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="rounded-md border border-destructive/30 bg-background px-2 py-1 text-xs font-medium hover:bg-destructive/5 transition-colors"
+            className="bg-background hover:bg-destructive/5 px-2 py-1 border border-destructive/30 rounded-md font-medium text-xs transition-colors"
           >
             Retry
           </button>
@@ -205,7 +207,7 @@ export default function SelectContactsStep() {
 
       {state.status === "success" &&
         (state.data.records.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+          <p className="bg-card px-4 py-8 border border-border border-dashed rounded-lg text-muted-foreground text-sm text-center">
             This segment is empty.
           </p>
         ) : state.data.type === "contact" ? (
@@ -234,7 +236,7 @@ function Skeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-10 animate-pulse rounded-lg border border-border bg-muted"
+          className="bg-muted border border-border rounded-lg h-10 animate-pulse"
         />
       ))}
     </div>

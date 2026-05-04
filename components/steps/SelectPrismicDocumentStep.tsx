@@ -13,7 +13,6 @@ export default function SelectPrismicDocumentStep() {
 
   function onDocumentSelected(document: PrismicDocumentMetadata) {
     setSelectedPrismicDocument(document);
-    router.push("/campaigns/new?step=select-segment");
   }
 
   function onContinue() {

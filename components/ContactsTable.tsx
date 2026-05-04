@@ -102,7 +102,7 @@ export default function ContactsTable({
       {records.length > maxSelection && (
         <div
           role="status"
-          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"
+          className="bg-amber-50 px-4 py-2.5 border border-amber-200 rounded-lg text-amber-800 text-sm"
         >
           This segment contains {records.length} contacts. Page generation is
           limited to {maxSelection} contacts per batch. For best results,
@@ -118,27 +118,27 @@ export default function ContactsTable({
         onGenerate={onGenerate}
       />
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
-        <table className="min-w-full divide-y divide-border text-sm">
+      <div className="bg-card shadow-sm border border-border rounded-lg overflow-x-auto">
+        <table className="divide-y divide-border min-w-full text-sm">
           <thead>
             <tr className="bg-muted/50">
-              <th className="w-10 px-4 py-2.5">
+              <th className="px-4 py-2.5 w-10">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
                   aria-label="Select all contacts"
-                  className="h-4 w-4 rounded accent-primary"
+                  className="rounded w-4 h-4 accent-primary"
                 />
               </th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">First name</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Last name</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Address</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Company</th>
-              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Job title</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Open</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">First name</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Last name</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Email</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Address</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Company</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-left uppercase tracking-wide">Job title</th>
+              <th className="px-4 py-2.5 font-medium text-muted-foreground text-xs text-right uppercase tracking-wide">Open</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -154,21 +154,22 @@ export default function ContactsTable({
                       ? "bg-accent/30"
                       : isRowDisabled
                         ? "opacity-40 cursor-not-allowed"
-                        : "hover:bg-muted/30 transition-colors"
+                        : "hover:bg-muted/30 transition-colors cursor-pointer"
                   }
+                  onClick={()=>toggleRow(c.id)}
                 >
-                  <td className="w-10 px-4 py-2.5">
+                  <td className="px-4 py-2.5 w-10">
                     <input
                       type="checkbox"
                       checked={isRowSelected}
                       disabled={isRowDisabled}
                       onChange={() => toggleRow(c.id)}
                       aria-label={`Select ${displayName(c)}`}
-                      className="h-4 w-4 rounded accent-primary disabled:cursor-not-allowed"
+                      className="rounded w-4 h-4 accent-primary disabled:cursor-not-allowed"
                     />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-foreground">{c.firstname ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-foreground">{c.lastname ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.firstname ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.lastname ?? "—"}</td>
                   <td className="px-4 py-2.5">
                     {c.email ? (
                       <a className="text-primary hover:underline" href={`mailto:${c.email}`}>
@@ -180,10 +181,10 @@ export default function ContactsTable({
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{formatAddress(c) || "—"}</td>
                   <td className="px-4 py-2.5">
-                    <div className="flex min-w-48 flex-col gap-0.5">
+                    <div className="flex flex-col gap-0.5 min-w-48">
                       <span className="font-medium text-foreground">{displayCompany(c)}</span>
                       {details.length > 0 && (
-                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                        <div className="flex flex-col gap-0.5 text-muted-foreground text-xs">
                           {details.map((detail) => (
                             <span key={detail.label}>
                               <span className="font-medium">{detail.label}:</span>{" "}
@@ -195,7 +196,7 @@ export default function ContactsTable({
                     </div>
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">{c.jobtitle ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
                     <a
                       href={`https://app.hubspot.com/contacts/${portalId}/contact/${c.id}`}
                       target="_blank"
