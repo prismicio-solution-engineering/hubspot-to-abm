@@ -54,6 +54,13 @@ export default function SelectSegmentStep() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 bg-card shadow-sm p-5 border border-border rounded-lg">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold text-foreground text-sm">HubSpot Segments</span>
+          <span className="inline-flex items-center gap-1.5 bg-green-50 px-2.5 py-1 border border-green-200 rounded-full font-medium text-green-700 text-xs">
+            <span className="bg-green-500 rounded-full w-1.5 h-1.5" />
+            HubSpot connected
+          </span>
+        </div>
         <SegmentCombobox onSegmentSelected={onSegmentSelected} />
       </div>
 

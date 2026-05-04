@@ -1,12 +1,60 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, ChevronDown, Trash2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Search, ChevronDown, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import NewCampaignDialog from "@/components/NewCampaignDialog";
 import LogoutButton from "@/components/LogoutButton";
 import { getCampaigns, deleteCampaign, type SavedCampaign } from "@/lib/campaigns-store";
+
+function CampaignMenu({ campaign, onDelete }: { campaign: SavedCampaign; onDelete: () => void }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        className="flex justify-center items-center hover:bg-muted border border-border rounded-md w-7 h-7 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Campaign options"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+
+      {open && (
+        <div className="right-[55px] z-50 absolute bg-card shadow-md mt-1 py-1 border border-border rounded-md w-fit">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); router.push(campaignUrl(campaign)); }}
+            className="flex items-center gap-2 hover:bg-muted px-3 py-1.5 w-full text-foreground text-sm transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); deleteCampaign(campaign.id); onDelete(); }}
+            className="flex items-center gap-2 hover:bg-destructive/5 px-3 py-1.5 w-full text-destructive text-sm transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
@@ -49,12 +97,6 @@ export default function HomePage() {
       return matchesSearch && matchesSegment;
     });
   }, [campaigns, search, segmentFilter]);
-
-  function handleDelete(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
-    deleteCampaign(id);
-    reload();
-  }
 
   return (
     <div className="flex flex-col bg-background min-h-screen">
@@ -130,7 +172,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mx-6 overflow-x-auto">
+          <div className="mx-6">
             <table className="mt-10 border border-border rounded-xl w-full text-sm">
               <thead >
                 <tr className="border-border border-b">
@@ -185,14 +227,7 @@ export default function HomePage() {
                         {formatDate(campaign.createdAt)}
                       </td>
                       <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={(e) => handleDelete(e, campaign.id)}
-                          className="hover:bg-destructive/10 p-1.5 rounded-md text-muted-foreground hover:text-destructive transition-opacity"
-                          aria-label="Delete campaign"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <CampaignMenu campaign={campaign} onDelete={reload} />
                       </td>
                     </tr>
                   ))

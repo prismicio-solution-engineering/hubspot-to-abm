@@ -96,33 +96,33 @@ export default function RecommendationCards({
 
   return (
     <section className="flex flex-col gap-4" aria-label="ABM recommendations">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <div className="flex flex-wrap justify-between items-center gap-3 pb-4 border-border border-b">
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 className="font-semibold text-foreground text-sm">
             {itemCount} recommendation{itemCount === 1 ? "" : "s"}
           </h2>
           {openAIResponseId && (
-            <p className="text-xs text-muted-foreground/60">ID: {openAIResponseId}</p>
+            <p className="text-muted-foreground/60 text-xs">ID: {openAIResponseId}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={showAll}>
-            <Eye className="h-3.5 w-3.5" />
+            <Eye className="w-3.5 h-3.5" />
             Show all
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={hideAll}>
-            <EyeOff className="h-3.5 w-3.5" />
+            <EyeOff className="w-3.5 h-3.5" />
             Hide all
           </Button>
           <Button type="button" size="sm" onClick={addItem}>
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="w-3.5 h-3.5" />
             Add card
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={onCopyJson}>
             {copyState === "copied" ? (
-              <><Check className="h-3.5 w-3.5" />Copied</>
+              <><Check className="w-3.5 h-3.5" />Copied</>
             ) : (
-              <><Copy className="h-3.5 w-3.5" />Copy JSON</>
+              <><Copy className="w-3.5 h-3.5" />Copy JSON</>
             )}
           </Button>
         </div>
@@ -204,8 +204,8 @@ function RecommendationCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <article className="bg-card shadow-sm border border-border rounded-lg overflow-hidden">
+      <div className="flex flex-wrap justify-between items-center gap-3 px-4 py-3">
         <button
           type="button"
           onClick={onToggle}
@@ -214,19 +214,19 @@ function RecommendationCard({
         >
           <ChevronRight
             className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              "w-4 h-4 text-muted-foreground transition-transform shrink-0",
               isOpen && "rotate-90"
             )}
           />
           <span className="flex flex-col gap-0.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+            <span className="font-semibold text-primary text-xs uppercase tracking-wide">
               {visibleItem.companyName || "Unknown company"}
             </span>
-            <span className="text-sm font-medium text-foreground">
+            <span className="font-medium text-foreground text-sm">
               {[visibleItem.firstName, visibleItem.lastName].filter(Boolean).join(" ") ||
                 "Unknown contact"}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {visibleItem.position || "Position unavailable"}
             </span>
           </span>
@@ -244,7 +244,7 @@ function RecommendationCard({
                   startEdit();
                 }}
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="w-3.5 h-3.5" />
                 Edit
               </Button>
               <Button
@@ -252,9 +252,9 @@ function RecommendationCard({
                 variant="outline"
                 size="sm"
                 onClick={() => onDiscard?.(index)}
-                className="border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                className="hover:bg-destructive/5 border-destructive/30 text-destructive hover:text-destructive"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="w-3.5 h-3.5" />
                 Discard
               </Button>
             </>
@@ -263,7 +263,7 @@ function RecommendationCard({
       </div>
 
       {isOpen && (
-        <div className="border-t border-border px-4 py-4">
+        <div className="px-4 py-4 border-border border-t">
           {isEditing ? (
             <EditContent
               draft={draft}
@@ -286,7 +286,7 @@ function RecommendationCard({
 function ViewContent({ item }: { item: RecommendationItem }) {
   return (
     <>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="gap-3 grid lg:grid-cols-2">
         <FieldList title="Challenges" items={item.challenges} />
         <FieldList title="Specific pain points" items={item.specificPainPoints} />
       </div>
@@ -316,14 +316,14 @@ function EditContent({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="gap-3 grid md:grid-cols-2">
         <EditField label="Company" value={draft.companyName} onChange={(v) => onTextChange("companyName", v)} />
         <EditField label="Position" value={draft.position} onChange={(v) => onTextChange("position", v)} />
         <EditField label="First name" value={draft.firstName} onChange={(v) => onTextChange("firstName", v)} />
         <EditField label="Last name" value={draft.lastName} onChange={(v) => onTextChange("lastName", v)} />
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="gap-3 grid lg:grid-cols-2">
         <EditableList
           title="Challenges"
           items={draft.challenges}
@@ -361,18 +361,18 @@ function EditContent({
 
 function FieldList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-md bg-muted/40 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+    <div className="bg-muted/40 p-3 rounded-md">
+      <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
       {items.length > 0 ? (
-        <ul className="mt-2 flex flex-col gap-1.5 text-sm text-foreground">
+        <ul className="flex flex-col gap-1.5 mt-2 text-foreground text-sm">
           {items.map((item, index) => (
-            <li key={`${item}-${index}`} className="rounded-md border border-border bg-card px-3 py-1.5">
+            <li key={`${item}-${index}`} className="bg-card px-3 py-1.5 border border-border rounded-md">
               {item}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-muted-foreground">No value returned.</p>
+        <p className="mt-2 text-muted-foreground text-sm">No value returned.</p>
       )}
     </div>
   );
@@ -380,9 +380,9 @@ function FieldList({ title, items }: { title: string; items: string[] }) {
 
 function FieldBlock({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-md bg-muted/40 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
+    <div className="bg-muted/40 p-3 rounded-md">
+      <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
+      <p className="mt-2 text-foreground text-sm leading-6 whitespace-pre-wrap">
         {value || "No value returned."}
       </p>
     </div>
@@ -425,19 +425,19 @@ function EditableList({
   const isAtLimit = typeof maxItems === "number" && items.length >= maxItems;
 
   return (
-    <div className="rounded-md bg-muted/40 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+    <div className="bg-muted/40 p-3 rounded-md">
+      <div className="flex justify-between items-center gap-2">
+        <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
         <button
           type="button"
           onClick={onAdd}
           disabled={isAtLimit}
-          className="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-accent disabled:cursor-not-allowed disabled:text-muted-foreground transition-colors"
+          className="hover:bg-accent px-2 py-0.5 rounded font-medium text-primary disabled:text-muted-foreground text-xs transition-colors disabled:cursor-not-allowed"
         >
           {isAtLimit ? `Max ${maxItems}` : "+ Add"}
         </button>
       </div>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 mt-2">
         {items.map((item, index) => (
           <div key={index} className="flex gap-2">
             <Textarea
@@ -450,9 +450,9 @@ function EditableList({
               type="button"
               onClick={() => onRemove(index)}
               aria-label={`Remove ${title} item ${index + 1}`}
-              className="self-start rounded-md border border-destructive/30 bg-card p-1.5 text-destructive transition-colors hover:bg-destructive/5"
+              className="self-start bg-card hover:bg-destructive/5 p-1.5 border border-destructive/30 rounded-md text-destructive transition-colors"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}

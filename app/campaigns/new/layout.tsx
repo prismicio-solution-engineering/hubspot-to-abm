@@ -38,7 +38,7 @@ export default function CampaignLayout({ children }: { children: ReactNode }) {
           <LogoutButton />
         </header>
 
-        <div className="px-6 py-3 border-border border-b">
+        <div className="bg-white mx-6 mt-6 px-6 py-3 border border-border rounded-lg">
           <Suspense>
             <StepIndicator />
           </Suspense>

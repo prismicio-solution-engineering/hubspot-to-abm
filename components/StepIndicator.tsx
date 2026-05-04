@@ -1,13 +1,36 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { CAMPAIGN_STEPS, getStepIndex } from "@/lib/campaign-flow";
+import { useCampaignStore } from "@/lib/campaign-store";
 
 export default function StepIndicator() {
   const params = useSearchParams();
+  const router = useRouter();
   const currentId = params.get("step") ?? CAMPAIGN_STEPS[0].id;
   const currentIndex = Math.max(0, getStepIndex(currentId));
+
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const recommendation = useCampaignStore((s) => s.recommendation);
+
+  function isNavigable(i: number): boolean {
+    if (i === currentIndex) return false;
+    if (i < currentIndex) return true;
+    // Forward: only if prerequisites are met
+    if (i === 1) return selectedPrismicDocument !== null;
+    if (i === 2) return selectedPrismicDocument !== null && selectedList !== null;
+    if (i === 3) return recommendation !== null;
+    return false;
+  }
+
+  function navigateTo(i: number) {
+    if (!isNavigable(i)) return;
+    const next = new URLSearchParams(params.toString());
+    next.set("step", CAMPAIGN_STEPS[i].id);
+    router.push(`/campaigns/new?${next.toString()}`);
+  }
 
   return (
     <nav aria-label="Campaign steps">
@@ -16,10 +39,18 @@ export default function StepIndicator() {
           const isCompleted = i < currentIndex;
           const isCurrent = i === currentIndex;
           const isLast = i === CAMPAIGN_STEPS.length - 1;
+          const navigable = isNavigable(i);
 
           return (
             <li key={step.id} className={cn("flex items-center", !isLast && "flex-1")}>
-              <div className="flex items-center gap-2">
+              <div
+                className={cn("flex items-center gap-2", navigable && "cursor-pointer group")}
+                onClick={() => navigateTo(i)}
+                role={navigable ? "button" : undefined}
+                tabIndex={navigable ? 0 : undefined}
+                onKeyDown={(e) => e.key === "Enter" && navigateTo(i)}
+                aria-label={navigable ? `Go to ${step.label}` : undefined}
+              >
                 {/* Circle */}
                 <div
                   aria-current={isCurrent ? "step" : undefined}
@@ -31,6 +62,7 @@ export default function StepIndicator() {
                       : "bg-muted text-muted-foreground",
                     isCompleted && "shadow-sm shadow-primary/30",
                     isCurrent && "scale-130 animate-step-glow",
+                    navigable && "group-hover:opacity-75",
                   )}
                 >
                   {isCompleted ? (
@@ -46,9 +78,10 @@ export default function StepIndicator() {
                 <span
                   className={cn(
                     "font-medium text-xs transition-colors duration-300",
-                    isCurrent  && "text-foreground",
+                    isCurrent && "text-foreground",
                     isCompleted && "text-muted-foreground",
                     !isCompleted && !isCurrent && "text-muted-foreground/40",
+                    navigable && "group-hover:opacity-75",
                   )}
                 >
                   {step.label}
