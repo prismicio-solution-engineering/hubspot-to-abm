@@ -78,18 +78,18 @@ export default function ReviewRecommendationsStep() {
   if (!recommendation) {
     return (
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
-          <p className="text-sm font-medium text-muted-foreground">
+        <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
+          <p className="font-medium text-muted-foreground text-sm">
             No recommendations generated yet.
           </p>
-          <p className="text-xs text-muted-foreground/70">
+          <p className="text-muted-foreground/70 text-xs">
             Go back to select contacts and generate recommendations.
           </p>
         </div>
         <button
           type="button"
           onClick={() => goToStep("select-contacts")}
-          className="w-fit rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+          className="bg-card hover:bg-muted shadow-sm px-4 py-2 border border-border rounded-md w-fit font-medium text-foreground text-sm transition-colors"
         >
           Back to step 3
         </button>
@@ -99,11 +99,11 @@ export default function ReviewRecommendationsStep() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-center">
         <button
           type="button"
           onClick={() => goToStep("select-contacts")}
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
+          className="bg-card hover:bg-muted shadow-sm px-4 py-2 border border-border rounded-md font-medium text-foreground text-sm transition-colors"
         >
           Back
         </button>
@@ -119,14 +119,14 @@ export default function ReviewRecommendationsStep() {
       {generationState.status === "error" && (
         <p
           role="alert"
-          className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="bg-destructive/5 px-4 py-3 border border-destructive/20 rounded-lg text-destructive text-sm"
         >
           {generationState.message}
         </p>
       )}
 
       {generationState.status === "success" && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div className="bg-green-50 px-4 py-3 border border-green-200 rounded-lg text-green-800 text-sm">
           {(() => {
             const failedItems = generationState.result.items.filter((item) => !item.ok);
             const successfulItems = generationState.result.items.length - failedItems.length;
@@ -140,7 +140,7 @@ export default function ReviewRecommendationsStep() {
                   {failedItems.length > 0 ? `, ${failedItems.length} failed.` : "."}
                 </p>
                 {failedItems.length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-green-900">
+                  <ul className="space-y-1 mt-2 pl-5 text-green-900 list-disc">
                     {failedItems.map((item, index) => (
                       <li key={`${item.companyName}-${index}`}>
                         {item.companyName || "Unknown company"}: {item.error}
@@ -152,7 +152,7 @@ export default function ReviewRecommendationsStep() {
                   href={generationState.result.release.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex text-green-900 underline"
+                  className="inline-flex mt-2 text-green-900 underline"
                 >
                   Open release
                 </a>
@@ -172,7 +172,7 @@ export default function ReviewRecommendationsStep() {
 
       {isReleaseModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="z-50 fixed inset-0 flex justify-center items-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="release-name-title"
@@ -184,14 +184,14 @@ export default function ReviewRecommendationsStep() {
           <form
             onSubmit={onSubmitRelease}
             onClick={(e) => e.stopPropagation()}
-            className="relative z-10 flex w-full max-w-md flex-col gap-5 rounded-lg border border-border bg-card p-6 shadow-xl"
+            className="z-10 relative flex flex-col gap-5 bg-card shadow-xl p-6 border border-border rounded-lg w-full max-w-md"
           >
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex justify-between items-start gap-3">
               <div className="flex flex-col gap-1">
-                <h2 id="release-name-title" className="text-base font-semibold text-foreground">
+                <h2 id="release-name-title" className="font-semibold text-foreground text-base">
                   Give a name to your release
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   This will create a Prismic release and personalise each remaining recommendation.
                 </p>
               </div>
@@ -199,9 +199,9 @@ export default function ReviewRecommendationsStep() {
                 type="button"
                 onClick={() => setIsReleaseModalOpen(false)}
                 aria-label="Close"
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="hover:bg-muted p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-4 right-4 absolute">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>

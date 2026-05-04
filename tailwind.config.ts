@@ -92,6 +92,10 @@ const config: Config = {
           "88%":  { opacity: "0", transform: "var(--bt) translateY(0)" },
           "100%": { opacity: "0", transform: "var(--bt) translateY(32px)" },
         },
+        "char-slide-in": {
+          from: { opacity: "0", transform: "translateX(-8px)" },
+          to:   { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "slide-in-right":     "slide-in-right     280ms cubic-bezier(0.4,0,0.2,1) both",
@@ -104,6 +108,7 @@ const config: Config = {
         "dialog-content-out": "dialog-content-out 150ms ease both",
         "step-glow":          "step-glow 5s ease-in-out infinite",
         "page-rise":          "page-rise 2.4s ease-in-out infinite",
+        "char-slide-in":      "char-slide-in 200ms cubic-bezier(0.4,0,0.2,1) both",
       },
     },
   },
