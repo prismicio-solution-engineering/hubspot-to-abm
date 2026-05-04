@@ -32,7 +32,21 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="flex-1 px-6 py-6">
+      <main className="flex flex-1 items-center justify-center px-6 py-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-foreground">No campaigns yet</p>
+            <p className="text-xs text-muted-foreground">Create your first ABM campaign to get started</p>
+          </div>
+          <NewCampaignDialog />
+        </div>
       </main>
     </div>
   );

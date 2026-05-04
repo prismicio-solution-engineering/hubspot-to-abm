@@ -1,22 +1,22 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PrismicDocumentCombobox from "../PrismicDocumentCombobox";
 import SelectedPrismicDocumentBox from "./SelectedPrismicDocumentBox";
 import { useCampaign } from "@/lib/campaign-context";
+import { useStepNavigation } from "@/lib/useStepNavigation";
 import type { PrismicDocumentMetadata } from "@/lib/types";
 
 export default function SelectPrismicDocumentStep() {
-  const router = useRouter();
   const { campaign, setSelectedPrismicDocument } = useCampaign();
+  const { goToStep } = useStepNavigation();
 
   function onDocumentSelected(document: PrismicDocumentMetadata) {
     setSelectedPrismicDocument(document);
   }
 
   function onContinue() {
-    router.push("/campaigns/new?step=select-segment");
+    goToStep("select-segment");
   }
 
   const hasSelection = campaign.selectedPrismicDocument !== null;

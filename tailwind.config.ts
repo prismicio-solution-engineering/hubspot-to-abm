@@ -81,6 +81,10 @@ const config: Config = {
           from: { opacity: "1", transform: "translateY(0) scale(1)" },
           to:   { opacity: "0", transform: "translateY(4px) scale(0.98)" },
         },
+        "step-glow": {
+          "0%, 100%": { boxShadow: "0 1px 3px hsl(var(--primary) / 0.3), 0 0 0 0px hsl(var(--primary) / 0.5)" },
+          "50%":      { boxShadow: "0 1px 3px hsl(var(--primary) / 0.4), 0 0 0 5px hsl(var(--primary) / 0)" },
+        },
         "page-rise": {
           "0%":   { opacity: "0", transform: "var(--bt) translateY(32px)" },
           "18%":  { opacity: "1", transform: "var(--bt) translateY(0)" },
@@ -98,6 +102,7 @@ const config: Config = {
         "dialog-overlay-out": "dialog-overlay-out 150ms ease both",
         "dialog-content-in":  "dialog-content-in  200ms cubic-bezier(0.16,1,0.3,1) both",
         "dialog-content-out": "dialog-content-out 150ms ease both",
+        "step-glow":          "step-glow 5s ease-in-out infinite",
         "page-rise":          "page-rise 2.4s ease-in-out infinite",
       },
     },

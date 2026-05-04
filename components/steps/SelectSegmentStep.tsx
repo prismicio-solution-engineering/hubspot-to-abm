@@ -1,26 +1,26 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import SegmentCombobox from "../SegmentCombobox";
 import SelectedSegmentBox from "./SelectedSegmentBox";
 import { useCampaign } from "@/lib/campaign-context";
+import { useStepNavigation } from "@/lib/useStepNavigation";
 import type { HubSpotList } from "@/lib/types";
 
 export default function SelectSegmentStep() {
-  const router = useRouter();
   const { campaign, setSelectedList } = useCampaign();
+  const { goToStep } = useStepNavigation();
 
   function onSegmentSelected(list: HubSpotList) {
     setSelectedList(list);
   }
 
   function onContinue() {
-    router.push("/campaigns/new?step=select-contacts");
+    goToStep("select-contacts");
   }
 
   function onBack() {
-    router.push("/campaigns/new?step=select-prismic-document");
+    goToStep("select-prismic-document");
   }
 
   const hasSelection = campaign.selectedList !== null;

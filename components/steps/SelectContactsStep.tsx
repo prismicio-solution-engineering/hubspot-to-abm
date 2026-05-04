@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useStepNavigation } from "@/lib/useStepNavigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ interface GeneratePagesResponse {
 }
 
 export default function SelectContactsStep() {
-  const router = useRouter();
+  const { goToStep } = useStepNavigation();
   const { campaign, portalId, setRecommendation, setSelectedContactIds } =
     useCampaign();
   const { selectedList, selectedContactIds } = campaign;
@@ -88,7 +88,7 @@ export default function SelectContactsStep() {
   );
 
   function onBack() {
-    router.push("/campaigns/new?step=select-segment");
+    goToStep("select-segment");
   }
 
   function onSelectionChange(next: ReadonlySet<string>) {
@@ -135,7 +135,7 @@ export default function SelectContactsStep() {
       const data = (await res.json()) as GeneratePagesResponse;
       setRecommendation(data.recommendation, data.openAIResponseId);
       setGenerationState({ status: "idle" });
-      router.push("/campaigns/new?step=review-recommendations");
+      goToStep("review-recommendations");
     } catch {
       setGenerationState({ status: "error", message: "Network error." });
     }

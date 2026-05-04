@@ -27,9 +27,10 @@ export default function StepIndicator() {
                     "flex justify-center items-center rounded-full w-5 h-5 font-semibold text-xs shrink-0",
                     "transition-all duration-300 ease-in-out",
                     (isCompleted || isCurrent)
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground",
-                    isCurrent && "scale-110 ring-2 ring-primary/20 ring-offset-1",
+                    isCompleted && "shadow-sm shadow-primary/30",
+                    isCurrent && "scale-130 animate-step-glow",
                   )}
                 >
                   {isCompleted ? (
@@ -56,13 +57,10 @@ export default function StepIndicator() {
 
               {/* Connector */}
               {!isLast && (
-                <div className="relative flex-1 mx-3 bg-border border-[1px] rounded-full h-px overflow-hidden">
+                <div className="relative flex-1 mx-3 bg-border rounded-full h-[1.5px] overflow-hidden">
                   <div
-                    className={cn(
-                      "left-0 absolute inset-y-0 bg-primary rounded-full",
-                      "transition-all duration-500 ease-in-out",
-                    )}
-                    style={{ width: isCompleted ? "100%" : "0%" }}
+                    className="absolute inset-0 bg-primary rounded-full origin-left transition-transform duration-500 ease-in-out"
+                    style={{ transform: isCompleted ? "scaleX(1)" : "scaleX(0)" }}
                   />
                 </div>
               )}

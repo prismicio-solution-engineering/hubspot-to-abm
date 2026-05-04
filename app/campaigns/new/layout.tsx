@@ -21,6 +21,7 @@ export default function CampaignLayout({ children }: { children: ReactNode }) {
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
+            <span className="font-semibold text-foreground text-muted-foreground/100 text-sm">                          Campaigns</span>
             <span className="text-muted-foreground/40">|</span>
             <div className="flex items-center gap-2">
               <div className="flex justify-center items-center bg-primary rounded w-6 h-6">
