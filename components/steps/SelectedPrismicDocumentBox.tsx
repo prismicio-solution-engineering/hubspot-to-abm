@@ -1,23 +1,23 @@
 "use client";
 
-import { useCampaign } from "@/lib/campaign-context";
+import { FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCampaignStore } from "@/lib/campaign-store";
 
 export default function SelectedPrismicDocumentBox() {
-  const { campaign, setSelectedPrismicDocument } = useCampaign();
-  const { selectedPrismicDocument } = campaign;
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const setSelectedPrismicDocument = useCampaignStore((s) => s.setSelectedPrismicDocument);
 
   if (!selectedPrismicDocument) {
     return (
       <section
         aria-label="Selected Prismic document"
         aria-live="polite"
-        className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200"
+        className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border border-border rounded-lg text-center"
       >
-        <p className="text-sm font-medium text-gray-400">
+        <FileText className="w-8 h-8 text-muted-foreground/40" />
+        <p className="font-medium text-muted-foreground text-sm">
           No Prismic document selected yet
-        </p>
-        <p className="text-xs text-gray-400">
-          Paste a Prismic document URL below.
         </p>
       </section>
     );
@@ -27,27 +27,33 @@ export default function SelectedPrismicDocumentBox() {
     <section
       aria-label="Selected Prismic document"
       aria-live="polite"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200"
+      className="flex flex-wrap justify-between items-center gap-3 bg-accent px-4 py-4 border border-primary/30 rounded-lg"
     >
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-          Selected Prismic document
-        </span>
-        <span className="text-lg font-semibold text-gray-900">
-          {selectedPrismicDocument.uid ?? selectedPrismicDocument.id}
-        </span>
-        <span className="text-xs text-gray-600">
-          {selectedPrismicDocument.type} - {selectedPrismicDocument.lang}
-        </span>
+      <div className="flex items-start gap-3">
+        <div className="flex justify-center items-center bg-primary/10 mt-0.5 rounded-md w-8 h-8 shrink-0">
+          <FileText className="w-4 h-4 text-primary" />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-semibold text-primary text-xs uppercase tracking-wide">
+            Selected document
+          </span>
+          <span className="font-semibold text-foreground text-sm">
+            {selectedPrismicDocument.uid ?? selectedPrismicDocument.id}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            {selectedPrismicDocument.type} · {selectedPrismicDocument.lang}
+          </span>
+        </div>
       </div>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => setSelectedPrismicDocument(null)}
         aria-label="Change selected Prismic document"
-        className="rounded-md px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
       >
         Change
-      </button>
+      </Button>
     </section>
   );
 }

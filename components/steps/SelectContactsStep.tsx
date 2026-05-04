@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useStepNavigation } from "@/lib/useStepNavigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import CompaniesTable from "../CompaniesTable";
 import ContactsTable from "../ContactsTable";
+import GeneratingModal from "../GeneratingModal";
 import TypeBadge from "../TypeBadge";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
+import { updateCampaign } from "@/lib/campaigns-store";
 import { buildPayload } from "@/lib/payload";
 import type {
   ErrorResponse,
@@ -35,10 +38,14 @@ interface GeneratePagesResponse {
 }
 
 export default function SelectContactsStep() {
-  const router = useRouter();
-  const { campaign, portalId, setRecommendation, setSelectedContactIds } =
-    useCampaign();
-  const { selectedList, selectedContactIds } = campaign;
+  const { goToStep } = useStepNavigation();
+  const id = useCampaignStore((s) => s.id);
+  const portalId = useCampaignStore((s) => s.portalId);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
+  const setRecommendation = useCampaignStore((s) => s.setRecommendation);
+  const setSelectedContactIds = useCampaignStore((s) => s.setSelectedContactIds);
   const listId = selectedList?.id ?? null;
 
   const [state, setState] = useState<State>({ status: "idle" });
@@ -86,7 +93,7 @@ export default function SelectContactsStep() {
   );
 
   function onBack() {
-    router.push("/campaigns/new?step=select-segment");
+    goToStep("select-segment");
   }
 
   function onSelectionChange(next: ReadonlySet<string>) {
@@ -96,7 +103,7 @@ export default function SelectContactsStep() {
   async function onGenerate() {
     if (state.status !== "success" || state.data.type !== "contact") return;
     if (!selectedList) return;
-    if (!campaign.selectedPrismicDocument) {
+    if (!selectedPrismicDocument) {
       setGenerationState({
         status: "error",
         message: "Select a Prismic document before generating pages.",
@@ -107,7 +114,7 @@ export default function SelectContactsStep() {
     const requestPayload: GeneratePagesPayload = buildPayload(
       state.data.records,
       selectedIds,
-      campaign.selectedPrismicDocument,
+      selectedPrismicDocument,
       selectedList.id,
       selectedList.name,
     );
@@ -132,8 +139,12 @@ export default function SelectContactsStep() {
 
       const data = (await res.json()) as GeneratePagesResponse;
       setRecommendation(data.recommendation, data.openAIResponseId);
+      updateCampaign(id, {
+        contactsCount: selectedContactIds.length,
+        currentStep: "review-recommendations",
+      });
       setGenerationState({ status: "idle" });
-      router.push("/campaigns/new?step=review-recommendations");
+      goToStep("review-recommendations");
     } catch {
       setGenerationState({ status: "error", message: "Network error." });
     }
@@ -141,73 +152,62 @@ export default function SelectContactsStep() {
 
   if (!selectedList) {
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
-          <p className="text-sm font-medium text-gray-400">
-            No segment selected.
-          </p>
-          <p className="text-xs text-gray-400">
-            Go back to the previous step to pick one.
-          </p>
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
+          <p className="font-medium text-muted-foreground text-sm">No segment selected.</p>
+          <p className="text-muted-foreground/70 text-xs">Go back to the previous step to pick one.</p>
         </div>
         <Link
           href="/campaigns/new?step=select-segment"
-          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="bg-card hover:bg-muted shadow-sm px-4 py-2 border border-border rounded-md w-fit font-medium text-foreground text-sm transition-colors"
         >
-          Back to step 1
+          Back to step 2
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
+    <div className="flex flex-col gap-5">
+      <GeneratingModal open={generationState.status === "loading"} />
+      <div className="flex justify-between items-center">
+        <Button type="button" variant="outline" size="sm" onClick={onBack}>
           Back
-        </button>
+        </Button>
       </div>
-      
-      <header className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-200 border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200">
-        <div className="flex flex-col gap-1">
-          {campaign.selectedPrismicDocument && (
-            <span className="text-xs text-gray-600">
-              Prismic document:{" "}
-              {campaign.selectedPrismicDocument.uid ??
-                campaign.selectedPrismicDocument.id}
+
+      <div className="flex flex-wrap items-center gap-3 bg-accent px-4 py-3 border border-primary/30 rounded-lg">
+        <div className="flex flex-col flex-1 gap-0.5">
+          {selectedPrismicDocument && (
+            <span className="text-muted-foreground text-xs">
+              Document:{" "}
+              <span className="font-medium text-foreground">
+                {selectedPrismicDocument.uid ?? selectedPrismicDocument.id}
+              </span>
             </span>
           )}
-          <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-            Selected segment
-          </span>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-lg font-semibold text-gray-900">
-              {selectedList.name}
-            </span>
+            <span className="font-semibold text-foreground text-sm">{selectedList.name}</span>
             <TypeBadge type={selectedList.objectType} />
           </div>
-          <span className="text-xs text-gray-600">
+          <span className="text-muted-foreground text-xs">
             {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
           </span>
         </div>
-      </header>
+      </div>
 
       {state.status === "loading" && <Skeleton />}
 
       {state.status === "error" && (
         <div
           role="alert"
-          className="flex flex-wrap items-center gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="flex flex-wrap items-center gap-3 bg-destructive/5 px-4 py-3 border border-destructive/20 rounded-lg text-destructive text-sm"
         >
           <span>{state.message}</span>
           <button
             type="button"
             onClick={() => setReloadKey((k) => k + 1)}
-            className="rounded-md border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+            className="bg-background hover:bg-destructive/5 px-2 py-1 border border-destructive/30 rounded-md font-medium text-xs transition-colors"
           >
             Retry
           </button>
@@ -216,7 +216,7 @@ export default function SelectContactsStep() {
 
       {state.status === "success" &&
         (state.data.records.length === 0 ? (
-          <p className="rounded-md border border-dashed border-gray-300 bg-white px-4 py-8 text-center text-sm text-gray-500">
+          <p className="bg-card px-4 py-8 border border-border border-dashed rounded-lg text-muted-foreground text-sm text-center">
             This segment is empty.
           </p>
         ) : state.data.type === "contact" ? (
@@ -235,18 +235,17 @@ export default function SelectContactsStep() {
         ) : (
           <CompaniesTable records={state.data.records} portalId={portalId} />
         ))}
-
     </div>
   );
 }
 
 function Skeleton() {
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-10 animate-pulse rounded-md border border-gray-200 bg-white"
+          className="bg-muted border border-border rounded-lg h-10 animate-pulse"
         />
       ))}
     </div>

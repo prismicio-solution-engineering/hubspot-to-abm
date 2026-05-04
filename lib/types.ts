@@ -15,6 +15,7 @@ export interface PrismicDocumentMetadata {
   url: string | null;
   firstPublicationDate: string | null;
   lastPublicationDate: string | null;
+  metaTitle: string | null;
 }
 
 export interface PrismicDocument extends PrismicDocumentMetadata {

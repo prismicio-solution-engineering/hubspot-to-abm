@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, Plus, Copy, Check, Eye, EyeOff, Trash2, Pencil } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { RecommendationItem, RecommendationResponse } from "@/lib/types";
 
 const MAX_PAIN_POINTS = 5;
@@ -90,55 +96,39 @@ export default function RecommendationCards({
 
   return (
     <section className="flex flex-col gap-4" aria-label="ABM recommendations">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-200 pb-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Recommended ABM pages
+      <div className="flex flex-wrap justify-between items-center gap-3 pb-4 border-border border-b">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="font-semibold text-foreground text-sm">
+            {itemCount} recommendation{itemCount === 1 ? "" : "s"}
           </h2>
-          <p className="text-sm text-gray-500">
-            {itemCount} recommendation{itemCount === 1 ? "" : "s"} in JSON
-          </p>
           {openAIResponseId && (
-            <p className="text-xs text-gray-400">OpenAI response {openAIResponseId}</p>
+            <p className="text-muted-foreground/60 text-xs">ID: {openAIResponseId}</p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={showAll}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={showAll}>
+            <Eye className="w-3.5 h-3.5" />
             Show all
-          </button>
-          <button
-            type="button"
-            onClick={hideAll}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={hideAll}>
+            <EyeOff className="w-3.5 h-3.5" />
             Hide all
-          </button>
-          <button
-            type="button"
-            onClick={addItem}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-          >
+          </Button>
+          <Button type="button" size="sm" onClick={addItem}>
+            <Plus className="w-3.5 h-3.5" />
             Add card
-          </button>
-          <button
-            type="button"
-            onClick={onCopyJson}
-            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-          >
-            {copyState === "copied"
-              ? "Copied"
-              : copyState === "unavailable"
-                ? "Copy unavailable"
-                : "Copy JSON"}
-          </button>
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={onCopyJson}>
+            {copyState === "copied" ? (
+              <><Check className="w-3.5 h-3.5" />Copied</>
+            ) : (
+              <><Copy className="w-3.5 h-3.5" />Copy JSON</>
+            )}
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-3">
+      <div className="flex flex-col gap-2">
         {recommendation.recommendationItems.map((item, index) => (
           <RecommendationCard
             key={`${item.companyName}-${item.firstName}-${item.lastName}-${index}`}
@@ -214,61 +204,66 @@ function RecommendationCard({
   }
 
   return (
-    <article className="rounded-md border border-gray-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <article className="bg-card shadow-sm border border-border rounded-lg overflow-hidden">
+      <div className="flex flex-wrap justify-between items-center gap-3 px-4 py-3">
         <button
           type="button"
           onClick={onToggle}
           aria-expanded={isOpen}
-          className="flex flex-1 items-center gap-3 text-left"
+          className="flex flex-1 items-center gap-2.5 text-left"
         >
-          <span
-            aria-hidden="true"
-            className={`text-gray-500 transition-transform ${isOpen ? "rotate-90" : ""}`}
-          >
-            ▶
-          </span>
-          <span className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+          <ChevronRight
+            className={cn(
+              "w-4 h-4 text-muted-foreground transition-transform shrink-0",
+              isOpen && "rotate-90"
+            )}
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-semibold text-primary text-xs uppercase tracking-wide">
               {visibleItem.companyName || "Unknown company"}
             </span>
-            <span className="text-base font-semibold text-gray-900">
+            <span className="font-medium text-foreground text-sm">
               {[visibleItem.firstName, visibleItem.lastName].filter(Boolean).join(" ") ||
                 "Unknown contact"}
             </span>
-            <span className="text-sm text-gray-500">
+            <span className="text-muted-foreground text-xs">
               {visibleItem.position || "Position unavailable"}
             </span>
           </span>
         </button>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           {!isEditing && (
             <>
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   if (!isOpen) onToggle();
                   startEdit();
                 }}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
+                <Pencil className="w-3.5 h-3.5" />
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => onDiscard?.(index)}
-                className="rounded-md border border-red-200 bg-white px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
+                className="hover:bg-destructive/5 border-destructive/30 text-destructive hover:text-destructive"
               >
+                <Trash2 className="w-3.5 h-3.5" />
                 Discard
-              </button>
+              </Button>
             </>
           )}
         </div>
       </div>
 
       {isOpen && (
-        <div className="border-t border-gray-200 px-4 py-4">
+        <div className="px-4 py-4 border-border border-t">
           {isEditing ? (
             <EditContent
               draft={draft}
@@ -291,16 +286,12 @@ function RecommendationCard({
 function ViewContent({ item }: { item: RecommendationItem }) {
   return (
     <>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="gap-3 grid lg:grid-cols-2">
         <FieldList title="Challenges" items={item.challenges} />
         <FieldList title="Specific pain points" items={item.specificPainPoints} />
       </div>
-
-      <div className="mt-4 grid gap-4">
-        <FieldBlock
-          title="Personalized instructions"
-          value={item.personalizedInstructions}
-        />
+      <div className="mt-3">
+        <FieldBlock title="Personalized instructions" value={item.personalizedInstructions} />
       </div>
     </>
   );
@@ -318,49 +309,26 @@ function EditContent({
   draft: RecommendationItem;
   onCancel: () => void;
   onSave: () => void;
-  onTextChange: <K extends keyof RecommendationItem>(
-    key: K,
-    value: RecommendationItem[K],
-  ) => void;
+  onTextChange: <K extends keyof RecommendationItem>(key: K, value: RecommendationItem[K]) => void;
   onListAdd: (key: "challenges" | "specificPainPoints") => void;
-  onListChange: (
-    key: "challenges" | "specificPainPoints",
-    index: number,
-    value: string,
-  ) => void;
+  onListChange: (key: "challenges" | "specificPainPoints", index: number, value: string) => void;
   onListRemove: (key: "challenges" | "specificPainPoints", index: number) => void;
 }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 md:grid-cols-2">
-        <EditField
-          label="Company"
-          value={draft.companyName}
-          onChange={(value) => onTextChange("companyName", value)}
-        />
-        <EditField
-          label="Position"
-          value={draft.position}
-          onChange={(value) => onTextChange("position", value)}
-        />
-        <EditField
-          label="First name"
-          value={draft.firstName}
-          onChange={(value) => onTextChange("firstName", value)}
-        />
-        <EditField
-          label="Last name"
-          value={draft.lastName}
-          onChange={(value) => onTextChange("lastName", value)}
-        />
+    <div className="flex flex-col gap-4">
+      <div className="gap-3 grid md:grid-cols-2">
+        <EditField label="Company" value={draft.companyName} onChange={(v) => onTextChange("companyName", v)} />
+        <EditField label="Position" value={draft.position} onChange={(v) => onTextChange("position", v)} />
+        <EditField label="First name" value={draft.firstName} onChange={(v) => onTextChange("firstName", v)} />
+        <EditField label="Last name" value={draft.lastName} onChange={(v) => onTextChange("lastName", v)} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="gap-3 grid lg:grid-cols-2">
         <EditableList
           title="Challenges"
           items={draft.challenges}
           onAdd={() => onListAdd("challenges")}
-          onChange={(i, value) => onListChange("challenges", i, value)}
+          onChange={(i, v) => onListChange("challenges", i, v)}
           onRemove={(i) => onListRemove("challenges", i)}
         />
         <EditableList
@@ -368,7 +336,7 @@ function EditContent({
           items={draft.specificPainPoints}
           maxItems={MAX_PAIN_POINTS}
           onAdd={() => onListAdd("specificPainPoints")}
-          onChange={(i, value) => onListChange("specificPainPoints", i, value)}
+          onChange={(i, v) => onListChange("specificPainPoints", i, v)}
           onRemove={(i) => onListRemove("specificPainPoints", i)}
         />
       </div>
@@ -376,24 +344,16 @@ function EditContent({
       <EditTextArea
         label="Personalized instructions"
         value={draft.personalizedInstructions}
-        onChange={(value) => onTextChange("personalizedInstructions", value)}
+        onChange={(v) => onTextChange("personalizedInstructions", v)}
       />
 
       <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel
-        </button>
-        <button
-          type="button"
-          onClick={onSave}
-          className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
+        </Button>
+        <Button type="button" size="sm" onClick={onSave}>
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -401,23 +361,18 @@ function EditContent({
 
 function FieldList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-        {title}
-      </h4>
+    <div className="bg-muted/40 p-3 rounded-md">
+      <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
       {items.length > 0 ? (
-        <ul className="mt-2 flex flex-col gap-2 text-sm text-gray-700">
+        <ul className="flex flex-col gap-1.5 mt-2 text-foreground text-sm">
           {items.map((item, index) => (
-            <li
-              key={`${item}-${index}`}
-              className="rounded-md border border-gray-200 bg-white px-3 py-2"
-            >
+            <li key={`${item}-${index}`} className="bg-card px-3 py-1.5 border border-border rounded-md">
               {item}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-gray-400">No value returned.</p>
+        <p className="mt-2 text-muted-foreground text-sm">No value returned.</p>
       )}
     </div>
   );
@@ -425,57 +380,30 @@ function FieldList({ title, items }: { title: string; items: string[] }) {
 
 function FieldBlock({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-        {title}
-      </h4>
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-700">
+    <div className="bg-muted/40 p-3 rounded-md">
+      <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
+      <p className="mt-2 text-foreground text-sm leading-6 whitespace-pre-wrap">
         {value || "No value returned."}
       </p>
     </div>
   );
 }
 
-function EditField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function EditField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-gray-700">{label}</span>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-      />
-    </label>
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
   );
 }
 
-function EditTextArea({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function EditTextArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium text-gray-700">{label}</span>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={5}
-        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-      />
-    </label>
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={5} />
+    </div>
   );
 }
 
@@ -497,36 +425,34 @@ function EditableList({
   const isAtLimit = typeof maxItems === "number" && items.length >= maxItems;
 
   return (
-    <div className="rounded-md border border-gray-100 bg-gray-50 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-          {title}
-        </h4>
+    <div className="bg-muted/40 p-3 rounded-md">
+      <div className="flex justify-between items-center gap-2">
+        <h4 className="font-semibold text-muted-foreground text-xs uppercase tracking-wide">{title}</h4>
         <button
           type="button"
           onClick={onAdd}
           disabled={isAtLimit}
-          className="rounded-md px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
+          className="hover:bg-accent px-2 py-0.5 rounded font-medium text-primary disabled:text-muted-foreground text-xs transition-colors disabled:cursor-not-allowed"
         >
-          {isAtLimit ? `Max ${maxItems}` : "Add"}
+          {isAtLimit ? `Max ${maxItems}` : "+ Add"}
         </button>
       </div>
-      <div className="mt-2 flex flex-col gap-2">
+      <div className="flex flex-col gap-2 mt-2">
         {items.map((item, index) => (
           <div key={index} className="flex gap-2">
-            <textarea
+            <Textarea
               value={item}
               rows={2}
               onChange={(e) => onChange(index, e.target.value)}
-              className="min-h-16 flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1"
             />
             <button
               type="button"
               onClick={() => onRemove(index)}
               aria-label={`Remove ${title} item ${index + 1}`}
-              className="h-fit rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50"
+              className="self-start bg-card hover:bg-destructive/5 p-1.5 border border-destructive/30 rounded-md text-destructive transition-colors"
             >
-              Remove
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}

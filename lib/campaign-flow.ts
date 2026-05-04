@@ -38,7 +38,7 @@ export const CAMPAIGN_STEPS: CampaignStep[] = [
   {
     id: "review-recommendations",
     number: 4,
-    label: "Review",
+    label: "Instructions",
     title: "Review ABM Recommendations",
     Component: ReviewRecommendationsStep,
   },

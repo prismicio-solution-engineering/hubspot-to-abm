@@ -1,102 +1,79 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-import ListSearchBar from "../ListSearchBar";
-import UrlInput from "../UrlInput";
+import { Button } from "@/components/ui/button";
+import SegmentCombobox from "../SegmentCombobox";
 import SelectedSegmentBox from "./SelectedSegmentBox";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
+import { useStepNavigation } from "@/lib/useStepNavigation";
+import { updateCampaign } from "@/lib/campaigns-store";
 import type { HubSpotList } from "@/lib/types";
 
 export default function SelectSegmentStep() {
-  const router = useRouter();
-  const { campaign, setSelectedList } = useCampaign();
-  const [searchResetKey, setSearchResetKey] = useState(0);
-  const [urlResetKey, setUrlResetKey] = useState(0);
+  const id = useCampaignStore((s) => s.id);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const setSelectedList = useCampaignStore((s) => s.setSelectedList);
+  const { goToStep } = useStepNavigation();
 
-  function selectFromSearch(list: HubSpotList) {
-    setUrlResetKey((k) => k + 1);
+  function onSegmentSelected(list: HubSpotList) {
     setSelectedList(list);
-    router.push("/campaigns/new?step=select-contacts");
-  }
-
-  function selectFromUrl(list: HubSpotList) {
-    setSearchResetKey((k) => k + 1);
-    setSelectedList(list);
-    router.push("/campaigns/new?step=select-contacts");
   }
 
   function onContinue() {
-    router.push("/campaigns/new?step=select-contacts");
+    if (selectedList) {
+      updateCampaign(id, {
+        segment: selectedList.name,
+        currentStep: "select-contacts",
+      });
+    }
+    goToStep("select-contacts");
   }
 
   function onBack() {
-    router.push("/campaigns/new?step=select-prismic-document");
+    goToStep("select-prismic-document");
   }
 
-  const hasSelection = campaign.selectedList !== null;
-  const sectionTitle = hasSelection
-    ? "Find a new segment"
-    : "Find your segment";
-
-  if (!campaign.selectedPrismicDocument) {
+  if (!selectedPrismicDocument) {
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
-          <p className="text-sm font-medium text-gray-400">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
+          <p className="font-medium text-muted-foreground text-sm">
             No Prismic document selected.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-muted-foreground/70 text-xs">
             Go back to the previous step to pick one.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
+        <Button type="button" variant="outline" onClick={onBack} className="w-fit">
           Back to step 1
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!hasSelection}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          Continue
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-6 p-6">
-        <h2 className="text-lg font-semibold text-gray-900">{sectionTitle}</h2>
-
-        <UrlInput
-          key={`url-${urlResetKey}`}
-          onListSelected={selectFromUrl}
-        />
-
-        <ListSearchBar
-          key={`search-${searchResetKey}`}
-          onListSelected={selectFromSearch}
-        />
+      <div className="flex flex-col gap-4 bg-card shadow-sm p-5 border border-border rounded-lg">
+        <div className="flex justify-between items-center">
+          <span className="font-semibold text-foreground text-sm">HubSpot Segments</span>
+          <span className="inline-flex items-center gap-1.5 bg-green-50 px-2.5 py-1 border border-green-200 rounded-full font-medium text-green-700 text-xs">
+            <span className="bg-green-500 rounded-full w-1.5 h-1.5" />
+            HubSpot connected
+          </span>
+        </div>
+        <SegmentCombobox onSegmentSelected={onSegmentSelected} />
       </div>
 
       <SelectedSegmentBox />
+
+      <div className="flex justify-between">
+        <Button type="button" variant="outline" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" onClick={onContinue} disabled={!selectedList}>
+          Continue
+        </Button>
+      </div>
     </div>
   );
 }
