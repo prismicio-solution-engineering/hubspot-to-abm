@@ -3,6 +3,7 @@ import type { HubSpotList, PrismicDocumentMetadata, RecommendationResponse } fro
 export interface SavedCampaign {
   id: string;
   name: string;
+  context?: string;
   // Summary fields (for the list page)
   segment?: string;
   contactsCount?: number;

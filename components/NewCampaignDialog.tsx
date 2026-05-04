@@ -23,7 +23,7 @@ export default function NewCampaignDialog({ onCreated }: Props = {}) {
   function handleCreate() {
     if (!name.trim()) return;
     const id = crypto.randomUUID();
-    createCampaign({ id, name: name.trim(), createdAt: new Date().toISOString() });
+    createCampaign({ id, name: name.trim(), createdAt: new Date().toISOString(), ...(context.trim() ? { context: context.trim() } : {}) });
     onCreated?.();
     const params = new URLSearchParams({ step: "select-prismic-document", name: name.trim(), id });
     if (context.trim()) params.set("context", context.trim());
