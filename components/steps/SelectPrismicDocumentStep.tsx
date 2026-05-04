@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-
-import PrismicUrlInput from "../PrismicUrlInput";
+import { Button } from "@/components/ui/button";
+import PrismicDocumentCombobox from "../PrismicDocumentCombobox";
 import SelectedPrismicDocumentBox from "./SelectedPrismicDocumentBox";
 import { useCampaign } from "@/lib/campaign-context";
 import type { PrismicDocumentMetadata } from "@/lib/types";
@@ -24,25 +24,17 @@ export default function SelectPrismicDocumentStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!hasSelection}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          Continue
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-6 p-6">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Find your Prismic document
-        </h2>
-        <PrismicUrlInput onDocumentSelected={onDocumentSelected} />
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5 shadow-sm">
+        <PrismicDocumentCombobox onDocumentSelected={onDocumentSelected} />
       </div>
 
       <SelectedPrismicDocumentBox />
+
+      <div className="flex justify-end">
+        <Button onClick={onContinue} disabled={!hasSelection}>
+          Continue
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TypeBadge from "../TypeBadge";
 import { useCampaign } from "@/lib/campaign-context";
 
@@ -12,13 +14,14 @@ export default function SelectedSegmentBox() {
       <section
         aria-label="Selected segment"
         aria-live="polite"
-        className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200"
+        className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center"
       >
-        <p className="text-sm font-medium text-gray-400">
+        <Users className="h-8 w-8 text-muted-foreground/40" />
+        <p className="text-sm font-medium text-muted-foreground">
           No segment selected yet
         </p>
-        <p className="text-xs text-gray-400">
-          Search by name or paste a HubSpot URL below.
+        <p className="text-xs text-muted-foreground/70">
+          Search by name or paste a HubSpot URL above.
         </p>
       </section>
     );
@@ -28,30 +31,34 @@ export default function SelectedSegmentBox() {
     <section
       aria-label="Selected segment"
       aria-live="polite"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-blue-500 bg-blue-50 px-4 py-4 transition-colors duration-200"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-accent px-4 py-4"
     >
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-          Selected segment
-        </span>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-lg font-semibold text-gray-900">
-            {selectedList.name}
-          </span>
-          <TypeBadge type={selectedList.objectType} />
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+          <Users className="h-4 w-4 text-primary" />
         </div>
-        <span className="text-xs text-gray-600">
-          {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+            Selected segment
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">{selectedList.name}</span>
+            <TypeBadge type={selectedList.objectType} />
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
+          </span>
+        </div>
       </div>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={() => setSelectedList(null)}
         aria-label="Change selected segment"
-        className="rounded-md px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
       >
         Change
-      </button>
+      </Button>
     </section>
   );
 }

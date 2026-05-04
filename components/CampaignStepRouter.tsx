@@ -23,10 +23,8 @@ export default function CampaignStepRouter() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-gray-900">{step.title}</h1>
-      <div className="mt-6">
-        <StepComponent />
-      </div>
+      <h1 className="mb-6 text-lg font-semibold text-foreground">{step.title}</h1>
+      <StepComponent />
     </div>
   );
 }

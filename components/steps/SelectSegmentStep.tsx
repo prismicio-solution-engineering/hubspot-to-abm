@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
+import { Button } from "@/components/ui/button";
 import ListSearchBar from "../ListSearchBar";
 import UrlInput from "../UrlInput";
 import SelectedSegmentBox from "./SelectedSegmentBox";
@@ -36,67 +36,50 @@ export default function SelectSegmentStep() {
   }
 
   const hasSelection = campaign.selectedList !== null;
-  const sectionTitle = hasSelection
-    ? "Find a new segment"
-    : "Find your segment";
 
   if (!campaign.selectedPrismicDocument) {
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
-          <p className="text-sm font-medium text-gray-400">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
+          <p className="text-sm font-medium text-muted-foreground">
             No Prismic document selected.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground/70">
             Go back to the previous step to pick one.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
+        <Button type="button" variant="outline" onClick={onBack} className="w-fit">
           Back to step 1
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onContinue}
-          disabled={!hasSelection}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          Continue
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-6 p-6">
-        <h2 className="text-lg font-semibold text-gray-900">{sectionTitle}</h2>
-
-        <UrlInput
-          key={`url-${urlResetKey}`}
-          onListSelected={selectFromUrl}
-        />
-
-        <ListSearchBar
-          key={`search-${searchResetKey}`}
-          onListSelected={selectFromSearch}
-        />
+      <div className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 shadow-sm">
+        <UrlInput key={`url-${urlResetKey}`} onListSelected={selectFromUrl} />
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <ListSearchBar key={`search-${searchResetKey}`} onListSelected={selectFromSearch} />
       </div>
 
       <SelectedSegmentBox />
+
+      <div className="flex justify-between">
+        <Button type="button" variant="outline" onClick={onBack}>
+          Back
+        </Button>
+        <Button type="button" onClick={onContinue} disabled={!hasSelection}>
+          Continue
+        </Button>
+      </div>
     </div>
   );
 }

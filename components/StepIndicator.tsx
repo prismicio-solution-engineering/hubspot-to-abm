@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-
+import { cn } from "@/lib/utils";
 import { CAMPAIGN_STEPS, getStepIndex } from "@/lib/campaign-flow";
 
 export default function StepIndicator() {
@@ -11,60 +11,50 @@ export default function StepIndicator() {
 
   return (
     <nav aria-label="Campaign steps">
-      <ol className="flex items-center">
+      <ol className="flex items-center gap-1">
         {CAMPAIGN_STEPS.map((step, i) => {
           const isCompleted = i < currentIndex;
           const isCurrent = i === currentIndex;
           const isLast = i === CAMPAIGN_STEPS.length - 1;
 
-          const circleClass = isCompleted
-            ? "bg-blue-600 border-blue-600 text-white"
-            : isCurrent
-              ? "bg-blue-600 border-blue-600 text-white"
-              : "bg-white border-gray-300 text-gray-400";
-
-          const labelClass = isCurrent
-            ? "text-blue-700 font-semibold"
-            : isCompleted
-              ? "text-gray-700"
-              : "text-gray-400";
-
-          const connectorClass = isCompleted ? "bg-blue-600" : "bg-gray-200";
-
           return (
-            <li
-              key={step.id}
-              className={`flex items-center ${isLast ? "" : "flex-1"}`}
-            >
-              <div className="flex flex-col items-center gap-1.5">
+            <li key={step.id} className={cn("flex items-center", !isLast && "flex-1")}>
+              <div className="flex items-center gap-2">
                 <div
                   aria-current={isCurrent ? "step" : undefined}
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${circleClass}`}
+                  className={cn(
+                    "flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold shrink-0",
+                    isCompleted && "bg-primary text-primary-foreground",
+                    isCurrent && "bg-primary text-primary-foreground",
+                    !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
+                  )}
                 >
                   {isCompleted ? (
-                    <svg
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.79 6.79-6.79a1 1 0 011.42 0z"
-                        clipRule="evenodd"
-                      />
+                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
+                      <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.79 6.79-6.79a1 1 0 011.42 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     step.number
                   )}
                 </div>
-                <span className={`text-xs ${labelClass}`}>{step.label}</span>
+                <span
+                  className={cn(
+                    "text-xs font-medium",
+                    isCurrent && "text-foreground",
+                    isCompleted && "text-muted-foreground",
+                    !isCompleted && !isCurrent && "text-muted-foreground/50"
+                  )}
+                >
+                  {step.label}
+                </span>
               </div>
               {!isLast && (
                 <div
                   aria-hidden="true"
-                  className={`mx-2 h-0.5 flex-1 ${connectorClass}`}
+                  className={cn(
+                    "mx-3 h-px flex-1",
+                    isCompleted ? "bg-primary/40" : "bg-border"
+                  )}
                 />
               )}
             </li>

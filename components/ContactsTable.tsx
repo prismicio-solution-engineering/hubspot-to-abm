@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-
 import GeneratePagesBar from "./GeneratePagesBar";
 import type { Contact } from "@/lib/types";
 
@@ -103,7 +102,7 @@ export default function ContactsTable({
       {records.length > maxSelection && (
         <div
           role="status"
-          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800"
         >
           This segment contains {records.length} contacts. Page generation is
           limited to {maxSelection} contacts per batch. For best results,
@@ -119,75 +118,75 @@ export default function ContactsTable({
         onGenerate={onGenerate}
       />
 
-      <div className="overflow-x-auto rounded-md border border-gray-200 bg-white shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-            <tr>
-              <th className="w-10 px-3 py-2">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-sm">
+        <table className="min-w-full divide-y divide-border text-sm">
+          <thead>
+            <tr className="bg-muted/50">
+              <th className="w-10 px-4 py-2.5">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
                   aria-label="Select all contacts"
-                  className="h-4 w-4 accent-blue-600"
+                  className="h-4 w-4 rounded accent-primary"
                 />
               </th>
-              <th className="px-3 py-2">First name</th>
-              <th className="px-3 py-2">Last name</th>
-              <th className="px-3 py-2">Email</th>
-              <th className="px-3 py-2">Address</th>
-              <th className="px-3 py-2">Company</th>
-              <th className="px-3 py-2">Job title</th>
-              <th className="px-3 py-2 text-right">Open</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">First name</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Last name</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Address</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Company</th>
+              <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Job title</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Open</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border">
             {records.map((c) => {
               const isRowSelected = selectedIds.has(c.id);
               const isRowDisabled = isLimitReached && !isRowSelected;
               const details = companyDetails(c);
-              const rowClass = isRowSelected
-                ? "bg-blue-50"
-                : isRowDisabled
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:bg-gray-50";
               return (
-                <tr key={c.id} className={rowClass}>
-                  <td className="w-10 px-3 py-2">
+                <tr
+                  key={c.id}
+                  className={
+                    isRowSelected
+                      ? "bg-accent/30"
+                      : isRowDisabled
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:bg-muted/30 transition-colors"
+                  }
+                >
+                  <td className="w-10 px-4 py-2.5">
                     <input
                       type="checkbox"
                       checked={isRowSelected}
                       disabled={isRowDisabled}
                       onChange={() => toggleRow(c.id)}
                       aria-label={`Select ${displayName(c)}`}
-                      className="h-4 w-4 accent-blue-600 disabled:cursor-not-allowed"
+                      className="h-4 w-4 rounded accent-primary disabled:cursor-not-allowed"
                     />
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2">{c.firstname ?? "—"}</td>
-                  <td className="whitespace-nowrap px-3 py-2">{c.lastname ?? "—"}</td>
-                  <td className="px-3 py-2">
+                  <td className="whitespace-nowrap px-4 py-2.5 text-foreground">{c.firstname ?? "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-foreground">{c.lastname ?? "—"}</td>
+                  <td className="px-4 py-2.5">
                     {c.email ? (
-                      <a className="text-blue-600 hover:underline" href={`mailto:${c.email}`}>
+                      <a className="text-primary hover:underline" href={`mailto:${c.email}`}>
                         {c.email}
                       </a>
                     ) : (
-                      "—"
+                      <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">{formatAddress(c) || "—"}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex min-w-56 flex-col gap-1">
-                      <span className="font-medium text-gray-900">
-                        {displayCompany(c)}
-                      </span>
+                  <td className="px-4 py-2.5 text-muted-foreground">{formatAddress(c) || "—"}</td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex min-w-48 flex-col gap-0.5">
+                      <span className="font-medium text-foreground">{displayCompany(c)}</span>
                       {details.length > 0 && (
-                        <div className="flex flex-col gap-0.5 text-xs text-gray-500">
+                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                           {details.map((detail) => (
                             <span key={detail.label}>
-                              <span className="font-medium text-gray-600">
-                                {detail.label}:
-                              </span>{" "}
+                              <span className="font-medium">{detail.label}:</span>{" "}
                               {detail.value}
                             </span>
                           ))}
@@ -195,13 +194,13 @@ export default function ContactsTable({
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2">{c.jobtitle ?? "—"}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-right">
+                  <td className="px-4 py-2.5 text-muted-foreground">{c.jobtitle ?? "—"}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right">
                     <a
                       href={`https://app.hubspot.com/contacts/${portalId}/contact/${c.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-primary hover:underline"
                       aria-label={`Open ${displayName(c)} in HubSpot`}
                     >
                       Open ↗

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import RecommendationCards from "../RecommendationCards";
 import { useCampaign } from "@/lib/campaign-context";
 import type { ErrorResponse, PrismicGenerationResult } from "@/lib/types";
@@ -26,7 +29,7 @@ export default function ReviewRecommendationsStep() {
     status: "idle",
   });
 
-  async function onSubmitRelease(e: FormEvent<HTMLFormElement>) {
+  async function onSubmitRelease(e: { preventDefault(): void }) {
     e.preventDefault();
     const name = releaseName.trim();
     if (!name || !campaign.recommendation || !campaign.selectedPrismicDocument) return;
@@ -63,18 +66,18 @@ export default function ReviewRecommendationsStep() {
 
   if (!campaign.recommendation) {
     return (
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-12 text-center transition-colors duration-200">
-          <p className="text-sm font-medium text-gray-400">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
+          <p className="text-sm font-medium text-muted-foreground">
             No recommendations generated yet.
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground/70">
             Go back to select contacts and generate recommendations.
           </p>
         </div>
         <Link
           href="/campaigns/new?step=select-contacts"
-          className="w-fit rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="w-fit rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
         >
           Back to step 3
         </Link>
@@ -83,50 +86,46 @@ export default function ReviewRecommendationsStep() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-between">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-between">
         <Link
           href="/campaigns/new?step=select-contacts"
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted transition-colors"
         >
           Back
         </Link>
-        <button
+        <Button
           type="button"
           onClick={() => setIsReleaseModalOpen(true)}
           disabled={campaign.recommendation.recommendationItems.length === 0}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
         >
           Ready to generate
-        </button>
+        </Button>
       </div>
 
       {generationState.status === "error" && (
         <p
           role="alert"
-          className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
         >
           {generationState.message}
         </p>
       )}
 
       {generationState.status === "success" && (
-        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {(() => {
             const failedItems = generationState.result.items.filter((item) => !item.ok);
             const successfulItems = generationState.result.items.length - failedItems.length;
             return (
               <>
-          <p className="font-medium">
-            Release &ldquo;{generationState.result.release.label}&rdquo; is ready.
-          </p>
-          <p className="mt-1">
-                  {successfulItems} personalized page
-                  {successfulItems === 1 ? "" : "s"} succeeded
-                  {failedItems.length > 0
-                    ? `, ${failedItems.length} failed.`
-                    : "."}
-          </p>
+                <p className="font-medium">
+                  Release &ldquo;{generationState.result.release.label}&rdquo; is ready.
+                </p>
+                <p className="mt-1">
+                  {successfulItems} personalized page{successfulItems === 1 ? "" : "s"} succeeded
+                  {failedItems.length > 0 ? `, ${failedItems.length} failed.` : "."}
+                </p>
                 {failedItems.length > 0 && (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-green-900">
                     {failedItems.map((item, index) => (
@@ -136,14 +135,14 @@ export default function ReviewRecommendationsStep() {
                     ))}
                   </ul>
                 )}
-          <a
-            href={generationState.result.release.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex text-green-900 underline"
-          >
-            Open release
-          </a>
+                <a
+                  href={generationState.result.release.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex text-green-900 underline"
+                >
+                  Open release
+                </a>
               </>
             );
           })()}
@@ -160,68 +159,67 @@ export default function ReviewRecommendationsStep() {
 
       {isReleaseModalOpen && (
         <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="release-name-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setIsReleaseModalOpen(false)}
         >
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsReleaseModalOpen(false)}
+          />
           <form
             onSubmit={onSubmitRelease}
             onClick={(e) => e.stopPropagation()}
-            className="flex w-full max-w-md flex-col gap-4 rounded-lg bg-white p-6 shadow-xl"
+            className="relative z-10 flex w-full max-w-md flex-col gap-5 rounded-lg border border-border bg-card p-6 shadow-xl"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-1">
-                <h2
-                  id="release-name-title"
-                  className="text-base font-semibold text-gray-900"
-                >
+                <h2 id="release-name-title" className="text-base font-semibold text-foreground">
                   Give a name to your release
                 </h2>
-                <p className="text-sm text-gray-500">
-                  This will create a Prismic release and personalize each remaining
-                  recommendation.
+                <p className="text-sm text-muted-foreground">
+                  This will create a Prismic release and personalise each remaining recommendation.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsReleaseModalOpen(false)}
-                aria-label="Close release modal"
-                className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close"
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
-                <span aria-hidden>✕</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-gray-700">Release name</span>
-              <input
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="release-name">Release name</Label>
+              <Input
+                id="release-name"
                 value={releaseName}
                 onChange={(e) => setReleaseName(e.target.value)}
                 autoFocus
-                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="e.g. Q3 ABM – Tech Companies"
               />
-            </label>
+            </div>
 
             <div className="flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setIsReleaseModalOpen(false)}
-                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                disabled={
-                  releaseName.trim().length === 0 ||
-                  generationState.status === "loading"
-                }
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                disabled={releaseName.trim().length === 0 || generationState.status === "loading"}
               >
-                {generationState.status === "loading" ? "Generating..." : "Create"}
-              </button>
+                {generationState.status === "loading" ? "Generating…" : "Create release"}
+              </Button>
             </div>
           </form>
         </div>

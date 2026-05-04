@@ -107,6 +107,33 @@ function toPrismicDocument(doc: RawPrismicDocument): PrismicDocument {
 
 export { PrismicError };
 
+export async function getPrismicDocumentsByType(
+  type: string,
+): Promise<PrismicDocumentMetadata[]> {
+  const { searchEndpoint, token } = getConfig();
+  const ref = await getMasterRef();
+
+  const all: PrismicDocumentMetadata[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const url = new URL(searchEndpoint);
+    url.searchParams.set("ref", ref);
+    url.searchParams.set("access_token", token);
+    url.searchParams.set("q", `[[:d = at(document.type, "${type}")]]`);
+    url.searchParams.set("pageSize", "100");
+    url.searchParams.set("page", String(page));
+
+    const data = await prismicFetch<SearchResponse & { total_pages: number }>(url);
+    all.push(...data.results.map(toPrismicDocumentMetadata));
+    totalPages = data.total_pages ?? 1;
+    page++;
+  }
+
+  return all;
+}
+
 export async function getPrismicDocument(documentId: string): Promise<PrismicDocument> {
   const { searchEndpoint, token } = getConfig();
   const ref = await getMasterRef();

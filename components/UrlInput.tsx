@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { ErrorResponse, HubSpotList } from "@/lib/types";
 
 interface Props {
@@ -24,7 +26,7 @@ export default function UrlInput({ onListSelected }: Props) {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<State>({ status: "idle" });
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     const trimmed = url.trim();
     if (trimmed.length === 0) return;
@@ -63,32 +65,28 @@ export default function UrlInput({ onListSelected }: Props) {
   const busy = state.status === "loading";
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-2">
-      <label htmlFor="list-url" className="text-sm font-medium text-gray-700">
-        Paste a HubSpot segment URL
-      </label>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          id="list-url"
-          type="url"
-          autoFocus
-          autoComplete="off"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://app.hubspot.com/contacts/…/lists/…/12345"
-          className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-        <button
-          type="submit"
-          disabled={busy || url.trim().length === 0}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300 sm:w-auto"
-        >
-          {busy ? "Loading…" : "Load"}
-        </button>
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="list-url">Paste a HubSpot segment URL</Label>
+        <div className="flex gap-2">
+          <Input
+            id="list-url"
+            type="url"
+            autoFocus
+            autoComplete="off"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://app.hubspot.com/contacts/…/lists/…/12345"
+            className="flex-1"
+          />
+          <Button type="submit" disabled={busy || url.trim().length === 0}>
+            {busy ? "Loading…" : "Load"}
+          </Button>
+        </div>
       </div>
 
       {state.status === "error" && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-destructive">
           {state.message}
         </p>
       )}
