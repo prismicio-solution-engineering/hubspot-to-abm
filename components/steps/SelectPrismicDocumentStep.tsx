@@ -3,12 +3,15 @@
 import { Button } from "@/components/ui/button";
 import PrismicDocumentCombobox from "../PrismicDocumentCombobox";
 import SelectedPrismicDocumentBox from "./SelectedPrismicDocumentBox";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
 import { useStepNavigation } from "@/lib/useStepNavigation";
+import { updateCampaign } from "@/lib/campaigns-store";
 import type { PrismicDocumentMetadata } from "@/lib/types";
 
 export default function SelectPrismicDocumentStep() {
-  const { campaign, setSelectedPrismicDocument } = useCampaign();
+  const id = useCampaignStore((s) => s.id);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const setSelectedPrismicDocument = useCampaignStore((s) => s.setSelectedPrismicDocument);
   const { goToStep } = useStepNavigation();
 
   function onDocumentSelected(document: PrismicDocumentMetadata) {
@@ -16,10 +19,9 @@ export default function SelectPrismicDocumentStep() {
   }
 
   function onContinue() {
+    updateCampaign(id, { currentStep: "select-segment" });
     goToStep("select-segment");
   }
-
-  const hasSelection = campaign.selectedPrismicDocument !== null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,7 +32,7 @@ export default function SelectPrismicDocumentStep() {
       <SelectedPrismicDocumentBox />
 
       <div className="flex justify-end">
-        <Button onClick={onContinue} disabled={!hasSelection}>
+        <Button onClick={onContinue} disabled={!selectedPrismicDocument}>
           Continue
         </Button>
       </div>

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import RecommendationCards from "../RecommendationCards";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
+import { updateCampaign } from "@/lib/campaigns-store";
 import type { ErrorResponse, PrismicGenerationResult } from "@/lib/types";
 
 type GenerationState =
@@ -17,12 +18,16 @@ type GenerationState =
   | { status: "success"; result: PrismicGenerationResult };
 
 export default function ReviewRecommendationsStep() {
-  const {
-    addRecommendationItem,
-    campaign,
-    discardRecommendationItem,
-    updateRecommendationItem,
-  } = useCampaign();
+  const id = useCampaignStore((s) => s.id);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
+  const recommendation = useCampaignStore((s) => s.recommendation);
+  const openAIResponseId = useCampaignStore((s) => s.openAIResponseId);
+  const addRecommendationItem = useCampaignStore((s) => s.addRecommendationItem);
+  const discardRecommendationItem = useCampaignStore((s) => s.discardRecommendationItem);
+  const updateRecommendationItem = useCampaignStore((s) => s.updateRecommendationItem);
+
   const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
   const [releaseName, setReleaseName] = useState("");
   const [generationState, setGenerationState] = useState<GenerationState>({
@@ -32,7 +37,7 @@ export default function ReviewRecommendationsStep() {
   async function onSubmitRelease(e: { preventDefault(): void }) {
     e.preventDefault();
     const name = releaseName.trim();
-    if (!name || !campaign.recommendation || !campaign.selectedPrismicDocument) return;
+    if (!name || !recommendation || !selectedPrismicDocument) return;
 
     setGenerationState({ status: "loading" });
 
@@ -42,8 +47,8 @@ export default function ReviewRecommendationsStep() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           releaseName: name,
-          baselineDocumentID: campaign.selectedPrismicDocument.id,
-          recommendationItems: campaign.recommendation.recommendationItems,
+          baselineDocumentID: selectedPrismicDocument.id,
+          recommendationItems: recommendation.recommendationItems,
         }),
       });
 
@@ -59,12 +64,17 @@ export default function ReviewRecommendationsStep() {
       const result = (await res.json()) as PrismicGenerationResult;
       setGenerationState({ status: "success", result });
       setIsReleaseModalOpen(false);
+      updateCampaign(id, {
+        segment: selectedList?.name,
+        contactsCount: selectedContactIds.length,
+        release: result.release,
+      });
     } catch {
       setGenerationState({ status: "error", message: "Network error." });
     }
   }
 
-  if (!campaign.recommendation) {
+  if (!recommendation) {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/30 px-4 py-12 text-center">
@@ -97,7 +107,7 @@ export default function ReviewRecommendationsStep() {
         <Button
           type="button"
           onClick={() => setIsReleaseModalOpen(true)}
-          disabled={campaign.recommendation.recommendationItems.length === 0}
+          disabled={recommendation.recommendationItems.length === 0}
         >
           Ready to generate
         </Button>
@@ -150,8 +160,8 @@ export default function ReviewRecommendationsStep() {
       )}
 
       <RecommendationCards
-        recommendation={campaign.recommendation}
-        openAIResponseId={campaign.openAIResponseId}
+        recommendation={recommendation}
+        openAIResponseId={openAIResponseId}
         onAddItem={addRecommendationItem}
         onUpdateItem={updateRecommendationItem}
         onDiscardItem={discardRecommendationItem}

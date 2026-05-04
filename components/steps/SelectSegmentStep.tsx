@@ -3,12 +3,16 @@
 import { Button } from "@/components/ui/button";
 import SegmentCombobox from "../SegmentCombobox";
 import SelectedSegmentBox from "./SelectedSegmentBox";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
 import { useStepNavigation } from "@/lib/useStepNavigation";
+import { updateCampaign } from "@/lib/campaigns-store";
 import type { HubSpotList } from "@/lib/types";
 
 export default function SelectSegmentStep() {
-  const { campaign, setSelectedList } = useCampaign();
+  const id = useCampaignStore((s) => s.id);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const setSelectedList = useCampaignStore((s) => s.setSelectedList);
   const { goToStep } = useStepNavigation();
 
   function onSegmentSelected(list: HubSpotList) {
@@ -16,6 +20,12 @@ export default function SelectSegmentStep() {
   }
 
   function onContinue() {
+    if (selectedList) {
+      updateCampaign(id, {
+        segment: selectedList.name,
+        currentStep: "select-contacts",
+      });
+    }
     goToStep("select-contacts");
   }
 
@@ -23,9 +33,7 @@ export default function SelectSegmentStep() {
     goToStep("select-prismic-document");
   }
 
-  const hasSelection = campaign.selectedList !== null;
-
-  if (!campaign.selectedPrismicDocument) {
+  if (!selectedPrismicDocument) {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
@@ -55,7 +63,7 @@ export default function SelectSegmentStep() {
         <Button type="button" variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button type="button" onClick={onContinue} disabled={!hasSelection}>
+        <Button type="button" onClick={onContinue} disabled={!selectedList}>
           Continue
         </Button>
       </div>

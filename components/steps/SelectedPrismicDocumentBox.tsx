@@ -2,11 +2,11 @@
 
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
 
 export default function SelectedPrismicDocumentBox() {
-  const { campaign, setSelectedPrismicDocument } = useCampaign();
-  const { selectedPrismicDocument } = campaign;
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const setSelectedPrismicDocument = useCampaignStore((s) => s.setSelectedPrismicDocument);
 
   if (!selectedPrismicDocument) {
     return (

@@ -3,11 +3,11 @@
 import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TypeBadge from "../TypeBadge";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
 
 export default function SelectedSegmentBox() {
-  const { campaign, setSelectedList } = useCampaign();
-  const { selectedList } = campaign;
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const setSelectedList = useCampaignStore((s) => s.setSelectedList);
 
   if (!selectedList) {
     return (
@@ -54,7 +54,7 @@ export default function SelectedSegmentBox() {
         onClick={() => setSelectedList(null)}
         aria-label="Change selected segment"
       >
-Delete
+        Delete
       </Button>
     </section>
   );

@@ -8,8 +8,13 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { createCampaign } from "@/lib/campaigns-store";
 
-export default function NewCampaignDialog() {
+interface Props {
+  onCreated?: () => void;
+}
+
+export default function NewCampaignDialog({ onCreated }: Props = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -17,7 +22,10 @@ export default function NewCampaignDialog() {
 
   function handleCreate() {
     if (!name.trim()) return;
-    const params = new URLSearchParams({ step: "select-prismic-document", name: name.trim() });
+    const id = crypto.randomUUID();
+    createCampaign({ id, name: name.trim(), createdAt: new Date().toISOString() });
+    onCreated?.();
+    const params = new URLSearchParams({ step: "select-prismic-document", name: name.trim(), id });
     if (context.trim()) params.set("context", context.trim());
     router.push(`/campaigns/new?${params.toString()}`);
   }

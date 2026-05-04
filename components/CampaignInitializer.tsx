@@ -2,21 +2,25 @@
 
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
 
-export default function CampaignInitializer() {
+interface Props {
+  portalId: string;
+}
+
+export default function CampaignInitializer({ portalId }: Props) {
   const params = useSearchParams();
-  const { setCampaignMeta } = useCampaign();
+  const initCampaign = useCampaignStore((s) => s.initCampaign);
   const done = useRef(false);
 
   useEffect(() => {
     if (done.current) return;
-    const name = params.get("name") ?? "";
-    const context = params.get("context") ?? "";
-    if (name) {
-      setCampaignMeta(name, context);
+    const id = params.get("id");
+    if (id) {
+      initCampaign(id, portalId);
       done.current = true;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return null;

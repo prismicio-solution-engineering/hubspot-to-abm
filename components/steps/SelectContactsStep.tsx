@@ -9,7 +9,8 @@ import CompaniesTable from "../CompaniesTable";
 import ContactsTable from "../ContactsTable";
 import GeneratingModal from "../GeneratingModal";
 import TypeBadge from "../TypeBadge";
-import { useCampaign } from "@/lib/campaign-context";
+import { useCampaignStore } from "@/lib/campaign-store";
+import { updateCampaign } from "@/lib/campaigns-store";
 import { buildPayload } from "@/lib/payload";
 import type {
   ErrorResponse,
@@ -38,9 +39,13 @@ interface GeneratePagesResponse {
 
 export default function SelectContactsStep() {
   const { goToStep } = useStepNavigation();
-  const { campaign, portalId, setRecommendation, setSelectedContactIds } =
-    useCampaign();
-  const { selectedList, selectedContactIds } = campaign;
+  const id = useCampaignStore((s) => s.id);
+  const portalId = useCampaignStore((s) => s.portalId);
+  const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
+  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
+  const setRecommendation = useCampaignStore((s) => s.setRecommendation);
+  const setSelectedContactIds = useCampaignStore((s) => s.setSelectedContactIds);
   const listId = selectedList?.id ?? null;
 
   const [state, setState] = useState<State>({ status: "idle" });
@@ -98,7 +103,7 @@ export default function SelectContactsStep() {
   async function onGenerate() {
     if (state.status !== "success" || state.data.type !== "contact") return;
     if (!selectedList) return;
-    if (!campaign.selectedPrismicDocument) {
+    if (!selectedPrismicDocument) {
       setGenerationState({
         status: "error",
         message: "Select a Prismic document before generating pages.",
@@ -109,7 +114,7 @@ export default function SelectContactsStep() {
     const requestPayload: GeneratePagesPayload = buildPayload(
       state.data.records,
       selectedIds,
-      campaign.selectedPrismicDocument,
+      selectedPrismicDocument,
       selectedList.id,
       selectedList.name,
     );
@@ -134,6 +139,10 @@ export default function SelectContactsStep() {
 
       const data = (await res.json()) as GeneratePagesResponse;
       setRecommendation(data.recommendation, data.openAIResponseId);
+      updateCampaign(id, {
+        contactsCount: selectedContactIds.length,
+        currentStep: "review-recommendations",
+      });
       setGenerationState({ status: "idle" });
       goToStep("review-recommendations");
     } catch {
@@ -169,11 +178,11 @@ export default function SelectContactsStep() {
 
       <div className="flex flex-wrap items-center gap-3 bg-accent px-4 py-3 border border-primary/30 rounded-lg">
         <div className="flex flex-col flex-1 gap-0.5">
-          {campaign.selectedPrismicDocument && (
+          {selectedPrismicDocument && (
             <span className="text-muted-foreground text-xs">
               Document:{" "}
               <span className="font-medium text-foreground">
-                {campaign.selectedPrismicDocument.uid ?? campaign.selectedPrismicDocument.id}
+                {selectedPrismicDocument.uid ?? selectedPrismicDocument.id}
               </span>
             </span>
           )}

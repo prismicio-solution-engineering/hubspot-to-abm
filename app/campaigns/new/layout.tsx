@@ -5,13 +5,12 @@ import { ArrowLeft } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 import StepIndicator from "@/components/StepIndicator";
 import CampaignTitle from "@/components/CampaignTitle";
-import { CampaignProvider } from "@/lib/campaign-context";
+import CampaignInitializer from "@/components/CampaignInitializer";
 
 export default function CampaignLayout({ children }: { children: ReactNode }) {
   const portalId = process.env.HUBSPOT_PORTAL_ID ?? "";
 
   return (
-    <CampaignProvider portalId={portalId}>
       <div className="flex flex-col bg-background min-h-screen">
         <header className="flex justify-between items-center px-6 border-border border-b h-14">
           <div className="flex items-center gap-3">
@@ -45,12 +44,15 @@ export default function CampaignLayout({ children }: { children: ReactNode }) {
           </Suspense>
         </div>
 
+        <Suspense>
+          <CampaignInitializer portalId={portalId} />
+        </Suspense>
+
         <main className="flex-1 px-6 py-6">
           <div className="mx-auto max-w-8xl">
             {children}
           </div>
         </main>
       </div>
-    </CampaignProvider>
   );
 }
