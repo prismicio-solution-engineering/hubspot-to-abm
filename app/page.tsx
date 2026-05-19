@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NewCampaignDialog from "@/components/NewCampaignDialog";
-import LogoutButton from "@/components/LogoutButton";
 import CampaignList from "@/components/CampaignList";
 import { getCampaigns, type SavedCampaign } from "@/lib/campaigns-store";
 
@@ -22,7 +21,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col bg-background min-h-screen">
-      <header className="flex justify-between items-center px-6 border-border border-b h-14">
+      <header className="flex justify-between items-center px-6 border-border border-b h-[72px]">
         <div className="flex items-center gap-2">
           <div className="flex justify-center items-center bg-primary rounded w-7 h-7">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
@@ -33,20 +32,26 @@ export default function HomePage() {
           </div>
           <span className="font-semibold text-foreground text-sm">ABM Campaigns</span>
         </div>
-        <div className="flex flex-1 items-center gap-3 px-6">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-1 items-center gap-5 pl-6">
+          <div className="relative flex-1">
             <Search className="top-1/2 left-3 absolute w-4 h-4 text-muted-foreground -translate-y-1/2" />
             <Input
               placeholder="Search for a campaign"
-              className="bg-white pl-9 h-9 text-sm"
+              className="bg-white pl-9 h-10 text-sm"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <NewCampaignDialog onCreated={reload} />
-          <LogoutButton />
+          <div className="flex items-center gap-3 shrink-0">
+            <NewCampaignDialog onCreated={reload} />
+            <a
+              href="https://template-landing.prismic.io/builder/working"
+              className="flex items-center justify-center w-10 h-10 rounded hover:bg-muted transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" style={{ color: "#6f6e77" }} />
+            </a>
+          </div>
         </div>
       </header>
 

@@ -12,13 +12,13 @@ export default function CampaignLayout({ children }: { children: ReactNode }) {
 
   return (
       <div className="flex flex-col bg-background min-h-screen">
-        <header className="flex justify-between items-center px-6 border-border border-b h-14">
+        <header className="flex justify-between items-center px-6 border-border border-b h-[72px]">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="flex items-center gap-1 bg-white p-2 border border-gray-200 rounded text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="flex items-center justify-center bg-white border border-gray-200 rounded text-muted-foreground hover:text-foreground transition-colors w-10 h-10"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" style={{ color: "#6f6e77" }} />
             </Link>
             <span className="font-semibold text-foreground text-muted-foreground/100 text-sm">                          Campaigns</span>
             <span className="text-muted-foreground/40">|</span>

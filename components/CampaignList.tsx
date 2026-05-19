@@ -140,13 +140,13 @@ export default function CampaignList({ campaigns, search, onReload }: CampaignLi
             <button
               type="button"
               onClick={() => setFilterOpen((o) => !o)}
-              className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1 border border-border rounded-md text-muted-foreground hover:text-foreground text-sm transition-colors"
+              className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1 border border-border rounded-md text-sm transition-colors"
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6f6e77" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
               </svg>
-              <span>{segmentFilter === "all" ? "Segment" : segmentFilter}</span>
+              <span style={{ color: "#1a1523" }}>{segmentFilter === "all" ? "Segment" : segmentFilter}</span>
               <ChevronDown className="w-3 h-3" />
             </button>
 

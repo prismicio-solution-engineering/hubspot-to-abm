@@ -393,6 +393,54 @@ interface ListFetchResponse {
   list: RawList;
 }
 
+export interface HubSpotProperty {
+  name: string;
+  label: string;
+  type: string;
+  fieldType: string;
+  groupName: string;
+  description: string;
+  hubspotDefined: boolean;
+  hidden: boolean;
+  options: Array<{ label: string; value: string; displayOrder: number }>;
+}
+
+export async function getCompanyProperties(): Promise<HubSpotProperty[]> {
+  interface PropertiesResponse {
+    results: HubSpotProperty[];
+  }
+  const data = await hubspotRequest<PropertiesResponse>({
+    method: "GET",
+    path: "/crm/v3/properties/companies",
+  });
+  return data.results;
+}
+
+export async function getSampleCompany(
+  propertyNames: string[],
+): Promise<{ name: string | null; values: Record<string, string> }> {
+  interface CompanySearchResponse {
+    results: Array<{ id: string; properties: Record<string, string | null> }>;
+  }
+  const data = await hubspotRequest<CompanySearchResponse>({
+    method: "POST",
+    path: "/crm/v3/objects/companies/search",
+    body: {
+      limit: 1,
+      filterGroups: [],
+      properties: propertyNames,
+      sorts: [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }],
+    },
+  });
+  const first = data.results[0];
+  if (!first) return { name: null, values: {} };
+  const values: Record<string, string> = {};
+  for (const [k, v] of Object.entries(first.properties)) {
+    if (v != null && v.trim().length > 0) values[k] = v;
+  }
+  return { name: values.name ?? null, values };
+}
+
 export async function getListMetadata(listId: string): Promise<HubSpotList> {
   const data = await hubspotRequest<ListFetchResponse>({
     method: "GET",
