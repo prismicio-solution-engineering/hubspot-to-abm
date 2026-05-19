@@ -69,8 +69,9 @@ async function enrichContactsWithContextProperties(
         return {
           ...contact,
           companyContextProperties: selectedProperties.map((property) => ({
-            ...property,
-            value: null,
+            propertyName: property.name,
+            propertyValue: null,
+            "How to use it": property.instruction,
           })),
         };
       }
@@ -79,8 +80,9 @@ async function enrichContactsWithContextProperties(
       return {
         ...contact,
         companyContextProperties: selectedProperties.map((property) => ({
-          ...property,
-          value: sample.values[property.name] ?? null,
+          propertyName: property.name,
+          propertyValue: sample.values[property.name] ?? null,
+          "How to use it": property.instruction,
         })),
       };
     }),

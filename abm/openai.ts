@@ -36,21 +36,22 @@ IDENTITY AND HUBSPOT RULES
 
 CONTEXT DESIGNER RULES
 The input may include selected HubSpot company properties from the Context Designer.
-Each selected property can include:
-- name
-- label
-- value
-- instruction
-- groupName
-- hubspotDefined
+Each selected property is attached to the relevant contact under companyContextProperties.
+Each item uses this exact shape:
+{
+  "propertyName": "HubSpot property internal name",
+  "propertyValue": "Company-specific HubSpot value",
+  "How to use it": "User instruction from the Context Designer"
+}
 
 When companyContextProperties are present on a contact:
 - Treat them as account-level HubSpot facts for that target account.
-- Follow each property's instruction when deciding how to use that value.
-- Use property values to make personalization more relevant, but only when the value is non-empty and clearly useful.
+- Read each item's propertyName, propertyValue, and "How to use it" before writing the recommendation.
+- Follow "How to use it" when deciding whether and how to use propertyValue.
+- Use propertyValue to make personalization more relevant, but only when it is non-empty and clearly useful.
 - Do not mention raw property names in the final page instructions unless the property name is meaningful to a content editor.
 - Do not overfit the page to technical/internal fields. Convert values into natural personalization guidance.
-- If a selected property has no value for a company, ignore it for that company.
+- If propertyValue is empty or null for a company, ignore it for that company.
 
 WEB RESEARCH RULES
 For each company, use web search to understand the company context.

@@ -94,9 +94,10 @@ export interface HubSpotContextPropertySelection {
   instruction: string;
 }
 
-export interface GeneratePagesCompanyContextProperty
-  extends HubSpotContextPropertySelection {
-  value: string | null;
+export interface GeneratePagesCompanyContextProperty {
+  propertyName: string;
+  propertyValue: string | null;
+  "How to use it": string;
 }
 
 export interface GeneratePagesPayload {
