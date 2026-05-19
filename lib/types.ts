@@ -81,6 +81,22 @@ export interface GeneratePagesContact {
   companyIndustry?: string;
   jobTitle?: string;
   associatedCompany?: Company;
+  companyContextProperties?: GeneratePagesCompanyContextProperty[];
+}
+
+export interface HubSpotContextPropertySelection {
+  name: string;
+  label: string;
+  type: string;
+  fieldType?: string;
+  groupName: string;
+  hubspotDefined: boolean;
+  instruction: string;
+}
+
+export interface GeneratePagesCompanyContextProperty
+  extends HubSpotContextPropertySelection {
+  value: string | null;
 }
 
 export interface GeneratePagesPayload {
@@ -98,6 +114,7 @@ export interface GeneratePagesPayload {
     listId: string;
     listName: string;
   };
+  contextProperties?: HubSpotContextPropertySelection[];
   contacts: GeneratePagesContact[];
 }
 

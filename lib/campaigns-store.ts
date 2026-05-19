@@ -1,4 +1,9 @@
-import type { HubSpotList, PrismicDocumentMetadata, RecommendationResponse } from "./types";
+import type {
+  HubSpotContextPropertySelection,
+  HubSpotList,
+  PrismicDocumentMetadata,
+  RecommendationResponse,
+} from "./types";
 
 export interface SavedCampaign {
   id: string;
@@ -14,11 +19,13 @@ export interface SavedCampaign {
   selectedPrismicDocument?: PrismicDocumentMetadata | null;
   selectedList?: HubSpotList | null;
   selectedContactIds?: string[];
+  selectedContextProperties?: HubSpotContextPropertySelection[];
   recommendation?: RecommendationResponse | null;
   openAIResponseId?: string | null;
 }
 
 const STORAGE_KEY = "abm_campaigns_v1";
+const STANDALONE_CONTEXT_STORAGE_KEY = "abm_context_designer_properties_v1";
 
 export function getCampaigns(): SavedCampaign[] {
   if (typeof window === "undefined") return [];
@@ -51,4 +58,21 @@ export function updateCampaign(id: string, updates: Partial<Omit<SavedCampaign, 
 
 export function deleteCampaign(id: string): void {
   persist(getCampaigns().filter((c) => c.id !== id));
+}
+
+export function getStandaloneContextProperties(): HubSpotContextPropertySelection[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(
+      localStorage.getItem(STANDALONE_CONTEXT_STORAGE_KEY) ?? "[]",
+    ) as HubSpotContextPropertySelection[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveStandaloneContextProperties(
+  properties: HubSpotContextPropertySelection[],
+): void {
+  localStorage.setItem(STANDALONE_CONTEXT_STORAGE_KEY, JSON.stringify(properties));
 }

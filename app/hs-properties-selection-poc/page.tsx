@@ -1,20 +1,48 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { Search, X, Plus } from "lucide-react";
 import CompanySampleCombobox, {
   type CompanySampleOption,
 } from "@/components/CompanySampleCombobox";
+import {
+  getCampaignById,
+  getStandaloneContextProperties,
+  saveStandaloneContextProperties,
+  updateCampaign,
+} from "@/lib/campaigns-store";
+import { useCampaignStore } from "@/lib/campaign-store";
 import type { HubSpotProperty } from "@/lib/hubspot";
+import type { HubSpotContextPropertySelection } from "@/lib/types";
 
 type Filter = "all" | "custom" | "standard";
 
-interface SelectedProperty {
+interface SelectedProperty extends HubSpotContextPropertySelection {
   property: HubSpotProperty;
-  instruction: string;
 }
 
-export default function HsPropertiesConfigPage() {
+function toContextSelection({
+  property,
+  instruction,
+}: SelectedProperty): HubSpotContextPropertySelection {
+  return {
+    name: property.name,
+    label: property.label,
+    type: property.type,
+    fieldType: property.fieldType,
+    groupName: property.groupName,
+    hubspotDefined: property.hubspotDefined,
+    instruction,
+  };
+}
+
+function HsPropertiesConfigPageContent() {
+  const params = useSearchParams();
+  const campaignId = params.get("id");
+  const storeCampaignId = useCampaignStore((s) => s.id);
+  const setStoreContextProperties = useCampaignStore((s) => s.setSelectedContextProperties);
+
   const [properties, setProperties] = useState<HubSpotProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +53,7 @@ export default function HsPropertiesConfigPage() {
   const [sampleValues, setSampleValues] = useState<Record<string, string>>({});
   const [sampleCompany, setSampleCompany] = useState<CompanySampleOption | null>(null);
   const [sampleLoading, setSampleLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   async function loadSampleValues(
     propertyNames: string[],
@@ -73,6 +102,22 @@ export default function HsPropertiesConfigPage() {
         if (data.error) throw new Error(data.error);
         const props = data.properties ?? [];
         setProperties(props);
+        const savedContext =
+          campaignId
+            ? getCampaignById(campaignId)?.selectedContextProperties ?? []
+            : storeCampaignId
+              ? useCampaignStore.getState().selectedContextProperties
+              : getStandaloneContextProperties();
+
+        setSelected(
+          savedContext
+            .map((saved) => {
+              const property = props.find((p) => p.name === saved.name);
+              return property ? { ...saved, property } : null;
+            })
+            .filter((item): item is SelectedProperty => item !== null),
+        );
+        setHasUnsavedChanges(false);
 
         const visibleNames = props.filter((p) => !p.hidden).map((p) => p.name);
         await loadSampleValues(visibleNames);
@@ -84,7 +129,29 @@ export default function HsPropertiesConfigPage() {
         setLoading(false);
         setSampleLoading(false);
       });
-  }, []);
+  }, [campaignId, storeCampaignId]);
+
+  function persistContextProperties(next: SelectedProperty[]) {
+    const persisted = next.map(toContextSelection);
+    if (campaignId) {
+      updateCampaign(campaignId, { selectedContextProperties: persisted });
+    }
+    if (storeCampaignId && (!campaignId || campaignId === storeCampaignId)) {
+      setStoreContextProperties(persisted);
+    }
+    if (!campaignId && !storeCampaignId) {
+      saveStandaloneContextProperties(persisted);
+    }
+  }
+
+  function markUnsaved() {
+    setHasUnsavedChanges(true);
+  }
+
+  function saveContextProperties() {
+    persistContextProperties(selected);
+    setHasUnsavedChanges(false);
+  }
 
   const visible = useMemo(
     () => properties.filter((p) => !p.hidden),
@@ -114,17 +181,34 @@ export default function HsPropertiesConfigPage() {
 
   function addProperty(property: HubSpotProperty) {
     if (selectedNames.has(property.name)) return;
-    setSelected((prev) => [...prev, { property, instruction: "" }]);
+    setSelected((prev) => [
+      ...prev,
+      {
+        property,
+        name: property.name,
+        label: property.label,
+        type: property.type,
+        fieldType: property.fieldType,
+        groupName: property.groupName,
+        hubspotDefined: property.hubspotDefined,
+        instruction: "",
+      },
+    ]);
+    markUnsaved();
   }
 
   function removeProperty(name: string) {
     setSelected((prev) => prev.filter((s) => s.property.name !== name));
+    markUnsaved();
   }
 
   function updateInstruction(name: string, instruction: string) {
     setSelected((prev) =>
-      prev.map((s) => (s.property.name === name ? { ...s, instruction } : s)),
+      prev.map((s) =>
+        s.property.name === name ? { ...s, instruction } : s,
+      ),
     );
+    markUnsaved();
   }
 
   async function handleSampleCompanySelected(company: CompanySampleOption) {
@@ -142,15 +226,29 @@ export default function HsPropertiesConfigPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="px-8 py-8 border-b border-border bg-white">
-        <h1 className="text-xl font-semibold text-foreground">
-          ABM Context Designer
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Select which HubSpot Company properties the Prismic ABM Agent will have
-          access to when generating personalized pages. For each property you
-          include, describe how the agent should use it — this becomes part of the
-          personalization instructions sent at generation time.
-        </p>
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">
+              ABM Context Designer
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+              Select which HubSpot Company properties the Prismic ABM Agent will have
+              access to when generating personalized pages. For each property you
+              include, describe how the agent should use it — this becomes part of the
+              personalization instructions sent at generation time.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={saveContextProperties}
+              disabled={!hasUnsavedChanges}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-primary/40"
+            >
+              Save changes
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex h-[calc(100vh-113px)]">
@@ -424,5 +522,19 @@ export default function HsPropertiesConfigPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HsPropertiesConfigPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+          Loading context designer...
+        </div>
+      }
+    >
+      <HsPropertiesConfigPageContent />
+    </Suspense>
   );
 }

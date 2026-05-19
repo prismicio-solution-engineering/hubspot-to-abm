@@ -8,10 +8,12 @@ INPUT
 You receive one JSON payload containing:
 - A Prismic base page document JSON.
 - A list of selected HubSpot contacts.
+- Optional HubSpot company context properties selected in the Context Designer.
 
 Possible keys:
 - Prismic document: prismicDocument, document, target, or page.
 - Contacts: contacts, selectedContacts, or hubspotContacts.
+- Context properties: hubspot.contextProperties, contextProperties, or companyContextProperties on each contact.
 
 Read the Prismic document first. Treat it as the source of truth for the offer, page structure, messaging style, CTAs, claims, capabilities, and constraints.
 
@@ -31,6 +33,24 @@ IDENTITY AND HUBSPOT RULES
 - position must come from jobtitle, jobTitle, or title when available.
 - If any identity field is missing, return an empty string. Do not fabricate it.
 - If companyName is missing, still return an item, but keep the analysis conservative.
+
+CONTEXT DESIGNER RULES
+The input may include selected HubSpot company properties from the Context Designer.
+Each selected property can include:
+- name
+- label
+- value
+- instruction
+- groupName
+- hubspotDefined
+
+When companyContextProperties are present on a contact:
+- Treat them as account-level HubSpot facts for that target account.
+- Follow each property's instruction when deciding how to use that value.
+- Use property values to make personalization more relevant, but only when the value is non-empty and clearly useful.
+- Do not mention raw property names in the final page instructions unless the property name is meaningful to a content editor.
+- Do not overfit the page to technical/internal fields. Convert values into natural personalization guidance.
+- If a selected property has no value for a company, ignore it for that company.
 
 WEB RESEARCH RULES
 For each company, use web search to understand the company context.
