@@ -167,5 +167,6 @@ export async function getPrismicDocumentMetadata(
     url: document.url,
     firstPublicationDate: document.firstPublicationDate,
     lastPublicationDate: document.lastPublicationDate,
+    metaTitle: document.metaTitle,
   };
 }

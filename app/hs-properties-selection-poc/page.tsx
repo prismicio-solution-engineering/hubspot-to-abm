@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Search, X, Plus } from "lucide-react";
+import CompanySampleCombobox, {
+  type CompanySampleOption,
+} from "@/components/CompanySampleCombobox";
 import type { HubSpotProperty } from "@/lib/hubspot";
 
 type Filter = "all" | "custom" | "standard";
@@ -20,8 +23,48 @@ export default function HsPropertiesConfigPage() {
 
   const [selected, setSelected] = useState<SelectedProperty[]>([]);
   const [sampleValues, setSampleValues] = useState<Record<string, string>>({});
-  const [sampleCompanyName, setSampleCompanyName] = useState<string | null>(null);
+  const [sampleCompany, setSampleCompany] = useState<CompanySampleOption | null>(null);
   const [sampleLoading, setSampleLoading] = useState(false);
+
+  async function loadSampleValues(
+    propertyNames: string[],
+    company?: CompanySampleOption,
+  ) {
+    setSampleLoading(true);
+    try {
+      const sampleRes = await fetch("/api/hs-properties/company/sample", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          properties: propertyNames,
+          ...(company ? { companyId: company.id } : {}),
+        }),
+      });
+      if (!sampleRes.ok) {
+        const data = (await sampleRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Sample request failed (${sampleRes.status})`);
+      }
+      const sample = (await sampleRes.json()) as {
+        id: string | null;
+        name: string | null;
+        values: Record<string, string>;
+      };
+      setSampleValues(sample.values ?? {});
+      setSampleCompany(
+        company ??
+          (sample.id
+            ? {
+                id: sample.id,
+                name: sample.name ?? undefined,
+                domain: sample.values?.domain,
+                industry: sample.values?.industry,
+              }
+            : null),
+      );
+    } finally {
+      setSampleLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/hs-properties/company")
@@ -32,18 +75,7 @@ export default function HsPropertiesConfigPage() {
         setProperties(props);
 
         const visibleNames = props.filter((p) => !p.hidden).map((p) => p.name);
-        setSampleLoading(true);
-        const sampleRes = await fetch("/api/hs-properties/company/sample", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ properties: visibleNames }),
-        });
-        const sample = (await sampleRes.json()) as {
-          name: string | null;
-          values: Record<string, string>;
-        };
-        setSampleValues(sample.values ?? {});
-        setSampleCompanyName(sample.name);
+        await loadSampleValues(visibleNames);
       })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : "Failed to load properties"),
@@ -58,6 +90,8 @@ export default function HsPropertiesConfigPage() {
     () => properties.filter((p) => !p.hidden),
     [properties],
   );
+
+  const visibleNames = useMemo(() => visible.map((p) => p.name), [visible]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -91,6 +125,15 @@ export default function HsPropertiesConfigPage() {
     setSelected((prev) =>
       prev.map((s) => (s.property.name === name ? { ...s, instruction } : s)),
     );
+  }
+
+  async function handleSampleCompanySelected(company: CompanySampleOption) {
+    try {
+      await loadSampleValues(visibleNames, company);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load sample values");
+      setSampleLoading(false);
+    }
   }
 
   const customCount = visible.filter((p) => !p.hubspotDefined).length;
@@ -289,14 +332,10 @@ export default function HsPropertiesConfigPage() {
               Properties the ABM agent will receive per company, with instructions
               on how to use them.
             </p>
-            {sampleCompanyName && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Example values from:{" "}
-                <span className="font-medium text-foreground">
-                  {sampleCompanyName}
-                </span>
-              </p>
-            )}
+            <CompanySampleCombobox
+              selectedCompany={sampleCompany}
+              onCompanySelected={handleSampleCompanySelected}
+            />
             {sampleLoading && (
               <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full border border-primary border-t-transparent animate-spin inline-block" />
