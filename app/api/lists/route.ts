@@ -4,7 +4,8 @@ import { HubSpotError, listAllLists } from "@/lib/hubspot";
 import type { SearchResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET() {
   try {

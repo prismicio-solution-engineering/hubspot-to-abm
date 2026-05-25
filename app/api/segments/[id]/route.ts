@@ -9,7 +9,8 @@ import {
 import type { RecordsResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(
   _req: Request,

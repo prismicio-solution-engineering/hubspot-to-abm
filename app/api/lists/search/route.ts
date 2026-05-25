@@ -4,7 +4,8 @@ import { HubSpotError, listAllLists } from "@/lib/hubspot";
 import type { HubSpotList, SearchResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const MAX_RESULTS = 10;
 

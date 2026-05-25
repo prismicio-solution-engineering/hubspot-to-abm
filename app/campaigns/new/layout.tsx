@@ -1,14 +1,20 @@
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowLeft } from "lucide-react";
 
 import LogoutButton from "@/components/LogoutButton";
 import StepIndicator from "@/components/StepIndicator";
 import CampaignTitle from "@/components/CampaignTitle";
 import CampaignInitializer from "@/components/CampaignInitializer";
+import { SESSION_COOKIE_NAME, getHubSpotSessionFromToken } from "@/lib/session";
 
-export default function CampaignLayout({ children }: { children: ReactNode }) {
-  const portalId = process.env.HUBSPOT_PORTAL_ID ?? "";
+export default async function CampaignLayout({ children }: { children: ReactNode }) {
+  const cookieStore = await cookies();
+  const session = await getHubSpotSessionFromToken(
+    cookieStore.get(SESSION_COOKIE_NAME)?.value,
+  );
+  const portalId = session?.portalId ?? "";
 
   return (
       <div className="flex flex-col bg-background min-h-screen">

@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function parseRecommendationJson(text: string): RecommendationResponse {
   let value: unknown;

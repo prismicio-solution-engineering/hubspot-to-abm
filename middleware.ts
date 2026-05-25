@@ -2,7 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { SESSION_COOKIE_NAME, verifySessionToken } from "./lib/session";
 
-const PUBLIC_PATHS = new Set(["/login", "/api/auth/login"]);
+const PUBLIC_PATHS = new Set([
+  "/login",
+  "/api/auth/hubspot/start",
+  "/api/auth/hubspot/callback",
+  "/api/auth/logout",
+]);
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

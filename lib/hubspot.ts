@@ -1,7 +1,16 @@
 import "server-only";
 
 import { Client } from "@hubspot/api-client";
+import { cookies } from "next/headers";
 
+import { refreshHubSpotTokens } from "./hubspot-oauth";
+import {
+  SESSION_COOKIE_NAME,
+  createSessionToken,
+  getHubSpotSessionFromToken,
+  sessionCookieOptions,
+  type HubSpotSession,
+} from "./session";
 import type { Company, Contact, HubSpotList, ObjectType } from "./types";
 
 const CONTACT_PROPERTIES = [
@@ -54,15 +63,56 @@ export class HubSpotError extends Error {
   }
 }
 
-let cachedClient: Client | null = null;
-function getClient(): Client {
-  if (cachedClient) return cachedClient;
-  const accessToken = process.env.HUBSPOT_ACCESS_TOKEN;
-  if (!accessToken) {
-    throw new HubSpotError(500, "unknown", "HUBSPOT_ACCESS_TOKEN is not set");
+const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 1000;
+
+function createClient(accessToken: string): Client {
+  return new Client({ accessToken });
+}
+
+function secondsUntil(timestamp: number): number {
+  return Math.max(0, Math.floor((timestamp - Date.now()) / 1000));
+}
+
+async function getHubSpotSession(): Promise<HubSpotSession> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const session = await getHubSpotSessionFromToken(token);
+
+  if (!session) {
+    throw new HubSpotError(401, "unauthorized", "Sign in with HubSpot to continue.");
   }
-  cachedClient = new Client({ accessToken });
-  return cachedClient;
+
+  if (session.accessTokenExpiresAt > Date.now() + ACCESS_TOKEN_REFRESH_BUFFER_MS) {
+    return session;
+  }
+
+  try {
+    const refreshed = await refreshHubSpotTokens(session.refreshToken);
+    const nextSession: HubSpotSession = {
+      ...session,
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken ?? session.refreshToken,
+      accessTokenExpiresAt: Date.now() + refreshed.expiresIn * 1000,
+      portalId: refreshed.portalId ?? session.portalId,
+      hubDomain: refreshed.hubDomain ?? session.hubDomain,
+      scopes: refreshed.scopes.length > 0 ? refreshed.scopes : session.scopes,
+    };
+
+    cookieStore.set(
+      SESSION_COOKIE_NAME,
+      await createSessionToken(nextSession),
+      sessionCookieOptions(secondsUntil(nextSession.sessionExpiresAt)),
+    );
+
+    return nextSession;
+  } catch {
+    cookieStore.set(SESSION_COOKIE_NAME, "", sessionCookieOptions(0));
+    throw new HubSpotError(
+      401,
+      "unauthorized",
+      "HubSpot session expired. Please sign in again.",
+    );
+  }
 }
 
 function translateError(status: number, body: string): HubSpotError {
@@ -101,7 +151,8 @@ interface RequestOptions {
 }
 
 async function hubspotRequest<T>({ method, path, qs, body }: RequestOptions): Promise<T> {
-  const client = getClient();
+  const session = await getHubSpotSession();
+  const client = createClient(session.accessToken);
   try {
     const response = await client.apiRequest({
       method,
