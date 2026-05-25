@@ -1,10 +1,34 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Trash2, Send } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  MonitorPlay,
+  Send,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import SegmentCombobox from "@/components/SegmentCombobox";
 import AccountsModal from "./AccountsModal";
+import {
+  DEMO_SHOWCASES,
+  createDemoShowcase,
+  getDefaultDemoShowcase,
+  type DemoShowcase,
+} from "@/lib/demo-showcase";
 import type {
   HubSpotList,
   Contact,
@@ -15,8 +39,6 @@ import type {
   RecommendationResponse,
   PrismicGenerationResult,
 } from "@/lib/types";
-
-const BASELINE_DOCUMENT_ID = "ae9WThYAACoALXhJ";
 
 type Step =
   | "idle"
@@ -46,6 +68,21 @@ interface GenState {
   fakeProgress: number;
 }
 
+interface DemoFormState {
+  name: string;
+  documentLabel: string;
+  repository: string;
+  baselineDocumentId: string;
+  documentUid: string;
+  customType: string;
+  lang: string;
+  previewUrl: string;
+  canEmbedPreview: boolean;
+  releasePrefix: string;
+}
+
+const CUSTOM_DEMO_STORAGE_KEY = "abm_prototype_custom_demo_v1";
+
 function toGeneratePagesContact(
   record: Contact | Company,
   type: "contact" | "company",
@@ -72,12 +109,68 @@ function toGeneratePagesContact(
   };
 }
 
+function demoToFormState(demo: DemoShowcase): DemoFormState {
+  return {
+    name: demo.name,
+    documentLabel: demo.documentLabel,
+    repository: demo.repository,
+    baselineDocumentId: demo.baselineDocumentId,
+    documentUid: demo.documentUid ?? "",
+    customType: demo.customType,
+    lang: demo.lang,
+    previewUrl: demo.previewUrl,
+    canEmbedPreview: demo.canEmbedPreview,
+    releasePrefix: demo.releasePrefix,
+  };
+}
+
+function loadCustomDemo(): DemoShowcase | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CUSTOM_DEMO_STORAGE_KEY);
+    if (!raw) return null;
+    return createDemoShowcase(JSON.parse(raw) as DemoFormState);
+  } catch {
+    return null;
+  }
+}
+
+function saveCustomDemo(form: DemoFormState): DemoShowcase {
+  const isBuilderUrl = isPrismicBuilderUrl(form.previewUrl);
+  const demo = createDemoShowcase({
+    ...form,
+    canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview,
+    id: "custom-demo",
+    editedLabel: "Custom demo",
+  });
+  localStorage.setItem(
+    CUSTOM_DEMO_STORAGE_KEY,
+    JSON.stringify({ ...form, canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview }),
+  );
+  return demo;
+}
+
+function isPrismicBuilderUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith(".prismic.io") && parsed.pathname.includes("/builder/");
+  } catch {
+    return false;
+  }
+}
+
 export default function PrototypeView() {
+  const [selectedDemo, setSelectedDemo] = useState<DemoShowcase>(
+    getDefaultDemoShowcase(),
+  );
+  const [isDemoMenuOpen, setIsDemoMenuOpen] = useState(false);
+  const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
+  const [customDemo, setCustomDemo] = useState<DemoShowcase | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "ai",
-      text: "Hi! I can help you create personalized variations of this page for your ABM campaigns. What would you like to do?",
+      text: `Hi! I'm connected to the ${getDefaultDemoShowcase().documentLabel} demo page. I can help you create personalized variations of this page for your ABM campaigns.`,
     },
   ]);
   const [selectedSegment, setSelectedSegment] = useState<HubSpotList | null>(null);
@@ -90,6 +183,19 @@ export default function PrototypeView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, step, genState]);
+
+  useEffect(() => {
+    const saved = loadCustomDemo();
+    if (!saved) return;
+    setCustomDemo(saved);
+    setSelectedDemo(saved);
+    setMessages([
+      {
+        role: "ai",
+        text: `Demo restored: ${saved.documentLabel}. I'm connected to this Prismic document and ready to run the ABM flow on it.`,
+      },
+    ]);
+  }, []);
 
   // Increment fake progress counter during page generation
   useEffect(() => {
@@ -107,8 +213,32 @@ export default function PrototypeView() {
     setMessages((prev) => [...prev, msg]);
   }
 
+  function handleDemoSelected(demo: DemoShowcase) {
+    setSelectedDemo(demo);
+    setIsDemoMenuOpen(false);
+    setStep("idle");
+    setSelectedSegment(null);
+    setRecords([]);
+    setRecordType("contact");
+    setIsModalOpen(false);
+    setGenState(null);
+    setMessages([
+      {
+        role: "ai",
+        text: `Demo switched to ${demo.documentLabel}. I'm connected to this Prismic document and ready to run the ABM flow on it.`,
+      },
+    ]);
+  }
+
+  function handleDemoSaved(form: DemoFormState) {
+    const demo = saveCustomDemo(form);
+    setCustomDemo(demo);
+    setIsDemoDialogOpen(false);
+    handleDemoSelected(demo);
+  }
+
   function handleActionClick() {
-    push({ role: "user", text: "Personalize for a HubSpot Segment" });
+    push({ role: "user", text: `Personalize ${selectedDemo.documentLabel}` });
     push({
       role: "ai",
       text: "Sure! Select the HubSpot segment you'd like to personalize this page for:",
@@ -118,7 +248,7 @@ export default function PrototypeView() {
 
   async function handleSegmentSelected(segment: HubSpotList) {
     setSelectedSegment(segment);
-    push({ role: "user", text: `${segment.name} · ${segment.size} records` });
+    push({ role: "user", text: segment.name });
     push({ role: "ai", text: `Loading accounts from "${segment.name}"…` });
     setStep("loading_contacts");
 
@@ -126,6 +256,7 @@ export default function PrototypeView() {
       const res = await fetch(`/api/segments/${segment.id}`);
       if (!res.ok) throw new Error("Failed");
       const data = (await res.json()) as RecordsResponse;
+      setSelectedSegment({ ...segment, size: data.records.length });
       setRecords(data.records);
       setRecordType(data.type);
       setMessages((prev) => {
@@ -154,7 +285,7 @@ export default function PrototypeView() {
   async function handleConfirm(selectedRecords: (Contact | Company)[]) {
     setIsModalOpen(false);
     const count = selectedRecords.length;
-    const releaseName = `Martech Madrid - ${selectedSegment!.name}`;
+    const releaseName = `${selectedDemo.releasePrefix} - ${selectedSegment!.name}`;
 
     push({ role: "user", text: `Generate for ${count} account${count !== 1 ? "s" : ""}` });
     setGenState({ releaseName, total: count, fakeProgress: 0 });
@@ -166,12 +297,14 @@ export default function PrototypeView() {
       const payload: GeneratePagesPayload = {
         version: "1.0",
         generatedAt: new Date().toISOString(),
+        demoId: selectedDemo.id,
+        demoRepository: selectedDemo.repository,
         target: {
           type: "prismic_document",
-          documentId: BASELINE_DOCUMENT_ID,
-          uid: null,
-          customType: "page",
-          lang: "en-us",
+          documentId: selectedDemo.baselineDocumentId,
+          uid: selectedDemo.documentUid,
+          customType: selectedDemo.customType,
+          lang: selectedDemo.lang,
         },
         source: {
           type: "hubspot_list",
@@ -204,8 +337,10 @@ export default function PrototypeView() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          demoId: selectedDemo.id,
+          demoRepository: selectedDemo.repository,
           releaseName,
-          baselineDocumentID: BASELINE_DOCUMENT_ID,
+          baselineDocumentID: selectedDemo.baselineDocumentId,
           recommendationItems: recommendation.recommendationItems,
         }),
       });
@@ -326,7 +461,7 @@ export default function PrototypeView() {
               onClick={handleActionClick}
               className="self-start mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
             >
-              <span>🎯</span>
+              <Sparkles className="w-3.5 h-3.5" />
               Personalize for a HubSpot Segment
             </button>
           )}
@@ -365,8 +500,10 @@ export default function PrototypeView() {
       {/* Right: page preview */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="shrink-0 flex items-center gap-3 px-4 h-11 border-b border-border bg-white">
-          <span className="text-sm font-semibold text-foreground">Martech Madrid Blueprint</span>
-          <span className="text-xs text-muted-foreground">Edited 2 min. ago</span>
+          <span className="text-sm font-semibold text-foreground">
+            {selectedDemo.documentLabel}
+          </span>
+          <span className="text-xs text-muted-foreground">{selectedDemo.editedLabel}</span>
           <div className="h-4 w-px bg-border mx-1" />
           <div className="flex items-center text-xs">
             <button className="px-2 py-0.5 font-medium text-primary border-b border-primary">
@@ -378,17 +515,27 @@ export default function PrototypeView() {
           </div>
           <div className="flex items-center gap-1.5 bg-muted rounded px-2.5 py-1 text-xs text-muted-foreground max-w-xs ml-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-            https://example.prismic.io/home
+            <span className="truncate">
+              {selectedDemo.previewUrl || selectedDemo.repository}
+            </span>
           </div>
           <div className="ml-auto">
-            <button className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 rounded-md">
-              Publish
-            </button>
+            <DemoMenu
+              selectedDemo={selectedDemo}
+              customDemo={customDemo}
+              open={isDemoMenuOpen}
+              onOpenChange={setIsDemoMenuOpen}
+              onSelect={handleDemoSelected}
+              onConfigure={() => {
+                setIsDemoMenuOpen(false);
+                setIsDemoDialogOpen(true);
+              }}
+            />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <MockLandingPage />
+          <DemoPreview demo={selectedDemo} />
         </div>
       </div>
 
@@ -401,6 +548,317 @@ export default function PrototypeView() {
           onClose={handleModalClose}
         />
       )}
+      <DemoSetupDialog
+        open={isDemoDialogOpen}
+        initialDemo={selectedDemo}
+        onOpenChange={setIsDemoDialogOpen}
+        onSave={handleDemoSaved}
+      />
+    </div>
+  );
+}
+
+function DemoMenu({
+  selectedDemo,
+  customDemo,
+  open,
+  onOpenChange,
+  onSelect,
+  onConfigure,
+}: {
+  selectedDemo: DemoShowcase;
+  customDemo: DemoShowcase | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSelect: (demo: DemoShowcase) => void;
+  onConfigure: () => void;
+}) {
+  const demos = customDemo ? [...DEMO_SHOWCASES, customDemo] : DEMO_SHOWCASES;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => onOpenChange(!open)}
+        className="flex items-center gap-1.5 bg-primary px-3 py-1.5 rounded-md font-medium text-primary-foreground text-xs hover:bg-primary/90 transition-colors"
+      >
+        <MonitorPlay className="w-3.5 h-3.5" />
+        Demo
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="top-full right-0 z-50 absolute bg-card shadow-lg mt-1 border border-border rounded-md min-w-[260px] overflow-hidden">
+          {demos.map((demo) => (
+            <button
+              key={demo.id}
+              type="button"
+              onClick={() => onSelect(demo)}
+              className={`flex flex-col gap-0.5 hover:bg-muted px-3 py-2 w-full text-left transition-colors ${
+                selectedDemo.id === demo.id ? "bg-accent" : ""
+              }`}
+            >
+              <span className="font-medium text-foreground text-sm">{demo.name}</span>
+              <span className="text-muted-foreground text-xs truncate">
+                {demo.documentLabel}
+              </span>
+            </button>
+          ))}
+          <div className="border-border border-t p-1">
+            <button
+              type="button"
+              onClick={onConfigure}
+              className="flex items-center gap-2 hover:bg-muted px-2 py-2 rounded w-full font-medium text-primary text-sm transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Configure demo
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DemoSetupDialog({
+  open,
+  initialDemo,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean;
+  initialDemo: DemoShowcase;
+  onOpenChange: (open: boolean) => void;
+  onSave: (form: DemoFormState) => void;
+}) {
+  const [form, setForm] = useState<DemoFormState>(() => demoToFormState(initialDemo));
+  const isValid =
+    form.name.trim().length > 0 &&
+    form.documentLabel.trim().length > 0 &&
+    form.repository.trim().length > 0 &&
+    form.baselineDocumentId.trim().length > 0 &&
+    form.customType.trim().length > 0 &&
+    form.lang.trim().length > 0 &&
+    form.releasePrefix.trim().length > 0;
+  const previewIsBuilderUrl = isPrismicBuilderUrl(form.previewUrl);
+
+  useEffect(() => {
+    if (open) setForm(demoToFormState(initialDemo));
+  }, [initialDemo, open]);
+
+  function update<K extends keyof DemoFormState>(key: K, value: DemoFormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function submit(e: { preventDefault(): void }) {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave(form);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <form onSubmit={submit}>
+          <DialogHeader>
+            <DialogTitle>Configure demo</DialogTitle>
+            <DialogDescription>
+              Connect the prototype to a Prismic base document and optional page preview.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <DemoField
+              label="Demo name"
+              value={form.name}
+              onChange={(value) => update("name", value)}
+              placeholder="Martech Madrid"
+            />
+            <DemoField
+              label="Release prefix"
+              value={form.releasePrefix}
+              onChange={(value) => update("releasePrefix", value)}
+              placeholder="Martech Madrid"
+            />
+            <DemoField
+              label="Document label"
+              value={form.documentLabel}
+              onChange={(value) => update("documentLabel", value)}
+              placeholder="Martech Madrid Blueprint"
+            />
+            <DemoField
+              label="Prismic repository"
+              value={form.repository}
+              onChange={(value) => update("repository", value)}
+              placeholder="template-landing"
+            />
+            <DemoField
+              label="Prismic document ID"
+              value={form.baselineDocumentId}
+              onChange={(value) => update("baselineDocumentId", value)}
+              placeholder="ae9WThYAACoALXhJ"
+            />
+            <DemoField
+              label="Document UID"
+              value={form.documentUid}
+              onChange={(value) => update("documentUid", value)}
+              placeholder="landing-page"
+            />
+            <DemoField
+              label="Custom type"
+              value={form.customType}
+              onChange={(value) => update("customType", value)}
+              placeholder="page"
+            />
+            <DemoField
+              label="Language"
+              value={form.lang}
+              onChange={(value) => update("lang", value)}
+              placeholder="en-us"
+            />
+          </div>
+
+          <div className="mt-4">
+            <DemoField
+              label="Published page URL"
+              value={form.previewUrl}
+              onChange={(value) => update("previewUrl", value)}
+              placeholder="https://your-public-site.com/demo-page"
+            />
+            <p className="mt-1.5 text-muted-foreground text-xs">
+              Use the public page URL for the right-side preview. Prismic Builder URLs open
+              the editor and cannot be embedded.
+            </p>
+          </div>
+
+          <label className="mt-4 flex items-start gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={form.canEmbedPreview && !previewIsBuilderUrl}
+              onChange={(e) => update("canEmbedPreview", e.target.checked)}
+              disabled={previewIsBuilderUrl}
+              className="mt-0.5 rounded accent-primary"
+            />
+            <span>
+              Load this URL inside the preview pane. Leave unchecked when the page blocks
+              iframe embedding.
+            </span>
+          </label>
+          {previewIsBuilderUrl && (
+            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-amber-800 text-xs">
+              This is a Prismic Builder URL. The prototype will open it in a new tab
+              instead of embedding it.
+            </p>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!isValid}>
+              Use demo
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DemoField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function DemoPreview({ demo }: { demo: DemoShowcase }) {
+  if (!demo.previewUrl) return <MockLandingPage demo={demo} />;
+
+  const isBuilderUrl = isPrismicBuilderUrl(demo.previewUrl);
+
+  if (!demo.canEmbedPreview || isBuilderUrl) {
+    return (
+      <div className="flex flex-col bg-white min-h-full">
+        <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-2 border-border border-b">
+          <div className="flex min-w-0 flex-col">
+            <span className="font-medium text-foreground text-xs">Base page preview</span>
+            <span className="text-muted-foreground text-xs truncate">{demo.previewUrl}</span>
+          </div>
+          <a
+            href={demo.previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1.5 border border-border rounded-md font-medium text-foreground text-xs transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            Open
+          </a>
+        </div>
+        <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 text-center">
+          <div className="flex items-center justify-center bg-primary/10 mb-4 rounded-lg w-11 h-11">
+            <MonitorPlay className="w-5 h-5 text-primary" />
+          </div>
+          <h2 className="font-semibold text-foreground text-base">{demo.documentLabel}</h2>
+          <p className="mt-2 max-w-md text-muted-foreground text-sm leading-6">
+            This demo is connected to Prismic document {demo.baselineDocumentId}.{" "}
+            {isBuilderUrl
+              ? "Prismic Builder pages cannot be embedded here, but you can open the document in Prismic."
+              : "The live page opens in a new tab because this URL is not configured for embedding."}
+          </p>
+          <a
+            href={demo.previewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 mt-5 px-3 py-2 rounded-md font-medium text-primary-foreground text-sm transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            {isBuilderUrl ? "Open in Prismic" : "Open base page"}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col bg-white min-h-full">
+      <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-2 border-border border-b">
+        <div className="flex min-w-0 flex-col">
+          <span className="font-medium text-foreground text-xs">Base page preview</span>
+          <span className="text-muted-foreground text-xs truncate">{demo.previewUrl}</span>
+        </div>
+        <a
+          href={demo.previewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1.5 border border-border rounded-md font-medium text-foreground text-xs transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Open
+        </a>
+      </div>
+      <iframe
+        key={demo.id}
+        src={demo.previewUrl}
+        title={`${demo.name} preview`}
+        className="flex-1 w-full min-h-[calc(100vh-88px)] bg-white"
+      />
     </div>
   );
 }
@@ -465,7 +923,7 @@ function GenerationResultCard({ result }: { result: GenerationResult }) {
   );
 }
 
-function MockLandingPage() {
+function MockLandingPage({ demo }: { demo: DemoShowcase }) {
   return (
     <div
       className="min-h-full bg-white"
@@ -491,7 +949,7 @@ function MockLandingPage() {
           ABM Event Personalization
         </p>
         <h1 className="text-5xl font-bold text-gray-900 leading-tight max-w-3xl mb-6">
-          Meet us at Martech Madrid
+          {demo.documentLabel}
         </h1>
         <p className="text-lg text-gray-400 max-w-xl mb-10 leading-relaxed">
           Prismic enables marketing teams to generate, customize, and publish
