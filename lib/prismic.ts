@@ -136,6 +136,31 @@ export async function getPrismicDocumentsByType(
   return all;
 }
 
+export async function getPrismicDocumentForRepo(
+  documentId: string,
+  repository: string,
+  token: string,
+): Promise<PrismicDocument> {
+  const apiEndpoint = `https://${repository}.cdn.prismic.io/api/v2`;
+  const searchEndpoint = `https://${repository}.cdn.prismic.io/api/v2/documents/search`;
+
+  const repoUrl = new URL(apiEndpoint);
+  repoUrl.searchParams.set("access_token", token);
+  const repoData = await prismicFetch<RepositoryResponse>(repoUrl);
+  const master = repoData.refs.find((ref) => ref.isMasterRef) ?? repoData.refs[0];
+  if (!master?.ref) throw new PrismicError(404, "No Prismic master ref found.");
+
+  const url = new URL(searchEndpoint);
+  url.searchParams.set("ref", master.ref);
+  url.searchParams.set("access_token", token);
+  url.searchParams.set("q", `[[at(document.id,"${documentId}")]]`);
+
+  const data = await prismicFetch<SearchResponse>(url);
+  const doc = data.results[0];
+  if (!doc) throw new PrismicError(404, "Prismic document not found.");
+  return toPrismicDocument(doc);
+}
+
 export async function getPrismicDocument(documentId: string): Promise<PrismicDocument> {
   const { searchEndpoint, token } = getConfig();
   const ref = await getMasterRef();

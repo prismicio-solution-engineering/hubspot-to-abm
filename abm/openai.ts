@@ -34,7 +34,7 @@ IDENTITY AND HUBSPOT RULES
 
 WEB RESEARCH RULES
 For each company, use web search to understand the company context.
-
+x
 Prioritize:
 1. The company’s official website.
 2. Official product, solutions, industry, about, customer, security, integrations, or pricing pages.

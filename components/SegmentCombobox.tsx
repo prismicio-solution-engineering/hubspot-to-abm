@@ -17,9 +17,10 @@ import type { ErrorResponse, HubSpotList, SearchResponse } from "@/lib/types";
 
 interface Props {
   onSegmentSelected: (segment: HubSpotList) => void;
+  sourceIcon?: React.ReactNode;
 }
 
-export default function SegmentCombobox({ onSegmentSelected }: Props) {
+export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props) {
   const [query, setQuery] = useState("");
   const [segments, setSegments] = useState<HubSpotList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +116,7 @@ export default function SegmentCombobox({ onSegmentSelected }: Props) {
             </span>
           ) : (
             <span className="flex items-center gap-2 text-muted-foreground">
-              <HubSpotIcon className="w-5 h-5" />
+              {sourceIcon ?? <HubSpotIcon className="w-5 h-5" />}
               {loading
                 ? "Loading segments…"
                 : segments.length > 0

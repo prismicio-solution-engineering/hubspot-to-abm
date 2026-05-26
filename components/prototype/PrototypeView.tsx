@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Trash2, Send } from "lucide-react";
 
 import SegmentCombobox from "@/components/SegmentCombobox";
@@ -72,7 +72,27 @@ function toGeneratePagesContact(
   };
 }
 
-export default function PrototypeView() {
+interface PrototypeViewProps {
+  preview?: ReactNode;
+  previewTitle?: string;
+  previewUrl?: string;
+  segmentSourceIcon?: ReactNode;
+  segmentPromptText?: string;
+  generatePagesEndpoint?: string;
+  generateAbmPagesEndpoint?: string;
+  baselineDocumentId?: string;
+}
+
+export default function PrototypeView({
+  preview,
+  previewTitle,
+  previewUrl,
+  segmentSourceIcon,
+  segmentPromptText,
+  generatePagesEndpoint = "/api/generate-pages",
+  generateAbmPagesEndpoint = "/api/prismic/generate-abm-pages",
+  baselineDocumentId = BASELINE_DOCUMENT_ID,
+}: PrototypeViewProps) {
   const [step, setStep] = useState<Step>("idle");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -111,7 +131,7 @@ export default function PrototypeView() {
     push({ role: "user", text: "Personalize for a HubSpot Segment" });
     push({
       role: "ai",
-      text: "Sure! Select the HubSpot segment you'd like to personalize this page for:",
+      text: segmentPromptText ?? "Sure! Select the HubSpot segment you'd like to personalize this page for:",
     });
     setStep("segment_selecting");
   }
@@ -154,7 +174,7 @@ export default function PrototypeView() {
   async function handleConfirm(selectedRecords: (Contact | Company)[]) {
     setIsModalOpen(false);
     const count = selectedRecords.length;
-    const releaseName = `Martech Madrid - ${selectedSegment!.name}`;
+    const releaseName = selectedSegment!.name;
 
     push({ role: "user", text: `Generate for ${count} account${count !== 1 ? "s" : ""}` });
     setGenState({ releaseName, total: count, fakeProgress: 0 });
@@ -168,7 +188,7 @@ export default function PrototypeView() {
         generatedAt: new Date().toISOString(),
         target: {
           type: "prismic_document",
-          documentId: BASELINE_DOCUMENT_ID,
+          documentId: baselineDocumentId,
           uid: null,
           customType: "page",
           lang: "en-us",
@@ -181,7 +201,7 @@ export default function PrototypeView() {
         contacts,
       };
 
-      const recsRes = await fetch("/api/generate-pages", {
+      const recsRes = await fetch(generatePagesEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -200,12 +220,12 @@ export default function PrototypeView() {
       setGenState((prev) => (prev ? { ...prev, fakeProgress: 0 } : prev));
       setStep("generating_pages");
 
-      const pagesRes = await fetch("/api/prismic/generate-abm-pages", {
+      const pagesRes = await fetch(generateAbmPagesEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           releaseName,
-          baselineDocumentID: BASELINE_DOCUMENT_ID,
+          baselineDocumentID: baselineDocumentId,
           recommendationItems: recommendation.recommendationItems,
         }),
       });
@@ -326,14 +346,19 @@ export default function PrototypeView() {
               onClick={handleActionClick}
               className="self-start mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
             >
-              <span>🎯</span>
-              Personalize for a HubSpot Segment
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M10 4.5C10 3.12 11.12 2 12.5 2C13.42 2 14.22 2.5 14.67 3.25C15.08 3.1 15.53 3 16 3C18.21 3 20 4.79 20 7C20 7.14 19.99 7.28 19.97 7.41C21.17 7.9 22 9.08 22 10.5C22 12.43 20.43 14 18.5 14H6C4.07 14 2.5 12.43 2.5 10.5C2.5 8.96 3.5 7.65 4.9 7.18C4.65 6.68 4.5 6.11 4.5 5.5C4.5 3.57 6.07 2 8 2C8.86 2 9.64 2.32 10.23 2.85C10.08 3.39 10 3.94 10 4.5Z" fill="#009EDB"/>
+              </svg>
+              Personalize page for a Salesforce segment
             </button>
           )}
 
           {step === "segment_selecting" && (
             <div className="w-full mt-1">
-              <SegmentCombobox onSegmentSelected={handleSegmentSelected} />
+              <SegmentCombobox
+                onSegmentSelected={handleSegmentSelected}
+                sourceIcon={segmentSourceIcon}
+              />
             </div>
           )}
 
@@ -365,7 +390,7 @@ export default function PrototypeView() {
       {/* Right: page preview */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="shrink-0 flex items-center gap-3 px-4 h-11 border-b border-border bg-white">
-          <span className="text-sm font-semibold text-foreground">Martech Madrid Blueprint</span>
+          <span className="text-sm font-semibold text-foreground">{previewTitle ?? "Martech Madrid Blueprint"}</span>
           <span className="text-xs text-muted-foreground">Edited 2 min. ago</span>
           <div className="h-4 w-px bg-border mx-1" />
           <div className="flex items-center text-xs">
@@ -376,10 +401,22 @@ export default function PrototypeView() {
               Comment
             </button>
           </div>
-          <div className="flex items-center gap-1.5 bg-muted rounded px-2.5 py-1 text-xs text-muted-foreground max-w-xs ml-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-            https://example.prismic.io/home
-          </div>
+          {previewUrl ? (
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-muted rounded px-2.5 py-1 text-xs text-muted-foreground max-w-xs ml-2 hover:text-foreground transition-colors truncate"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+              {previewUrl}
+            </a>
+          ) : (
+            <div className="flex items-center gap-1.5 bg-muted rounded px-2.5 py-1 text-xs text-muted-foreground max-w-xs ml-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+              https://example.prismic.io/home
+            </div>
+          )}
           <div className="ml-auto">
             <button className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 rounded-md">
               Publish
@@ -387,8 +424,8 @@ export default function PrototypeView() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <MockLandingPage />
+        <div className="flex-1 overflow-hidden">
+          {preview ?? <MockLandingPage />}
         </div>
       </div>
 
