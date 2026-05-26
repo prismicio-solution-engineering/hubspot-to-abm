@@ -1,10 +1,12 @@
 import { create } from "zustand";
 
 import type {
+  ContactSourceId,
   HubSpotContextPropertySelection,
   HubSpotList,
   PrismicDocumentMetadata,
   RecommendationResponse,
+  Segment,
 } from "./types";
 import { getCampaignById, updateCampaign } from "./campaigns-store";
 
@@ -13,6 +15,8 @@ interface CampaignStore {
   portalId: string;
   selectedPrismicDocument: PrismicDocumentMetadata | null;
   selectedList: HubSpotList | null;
+  selectedSourceId: ContactSourceId | null;
+  selectedSegment: Segment | null;
   selectedContactIds: string[];
   selectedContextProperties: HubSpotContextPropertySelection[];
   recommendation: RecommendationResponse | null;
@@ -22,6 +26,8 @@ interface CampaignStore {
   initCampaign: (id: string, portalId: string) => void;
   setSelectedPrismicDocument: (document: PrismicDocumentMetadata | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
+  setSelectedSourceId: (id: ContactSourceId | null) => void;
+  setSelectedSegment: (segment: Segment | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
   setSelectedContextProperties: (properties: HubSpotContextPropertySelection[]) => void;
   setRecommendation: (
@@ -37,11 +43,44 @@ interface CampaignStore {
   resetCampaign: () => void;
 }
 
+function inferLegacyState(saved: ReturnType<typeof getCampaignById>): {
+  selectedSourceId: ContactSourceId | null;
+  selectedSegment: Segment | null;
+} {
+  if (saved?.selectedSegment) {
+    return {
+      selectedSourceId:
+        saved.selectedSourceId ?? saved.selectedSegment.sourceId ?? null,
+      selectedSegment: saved.selectedSegment,
+    };
+  }
+  if (saved?.selectedList) {
+    const segment: Segment = {
+      id: saved.selectedList.id,
+      name: saved.selectedList.name,
+      objectType: saved.selectedList.objectType,
+      size: saved.selectedList.size,
+      sourceId: "hubspot",
+      raw: saved.selectedList,
+    };
+    return {
+      selectedSourceId: saved.selectedSourceId ?? "hubspot",
+      selectedSegment: segment,
+    };
+  }
+  return {
+    selectedSourceId: saved?.selectedSourceId ?? null,
+    selectedSegment: null,
+  };
+}
+
 export const useCampaignStore = create<CampaignStore>((set) => ({
   id: "",
   portalId: "",
   selectedPrismicDocument: null,
   selectedList: null,
+  selectedSourceId: null,
+  selectedSegment: null,
   selectedContactIds: [],
   selectedContextProperties: [],
   recommendation: null,
@@ -50,12 +89,15 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
 
   initCampaign: (id, portalId) => {
     const saved = getCampaignById(id);
+    const legacy = inferLegacyState(saved);
     set({
       id,
       portalId,
       _persistEnabled: true,
       selectedPrismicDocument: saved?.selectedPrismicDocument ?? null,
       selectedList: saved?.selectedList ?? null,
+      selectedSourceId: legacy.selectedSourceId,
+      selectedSegment: legacy.selectedSegment,
       selectedContactIds: saved?.selectedContactIds ?? [],
       selectedContextProperties: saved?.selectedContextProperties ?? [],
       recommendation: saved?.recommendation ?? null,
@@ -64,10 +106,49 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
   },
 
   setSelectedPrismicDocument: (document) =>
-    set({ selectedPrismicDocument: document, selectedList: null, selectedContactIds: [], recommendation: null, openAIResponseId: null }),
+    set({
+      selectedPrismicDocument: document,
+      selectedList: null,
+      selectedSegment: null,
+      selectedContactIds: [],
+      recommendation: null,
+      openAIResponseId: null,
+    }),
 
   setSelectedList: (list) =>
-    set({ selectedList: list, selectedContactIds: [], recommendation: null, openAIResponseId: null }),
+    set({
+      selectedList: list,
+      selectedContactIds: [],
+      recommendation: null,
+      openAIResponseId: null,
+    }),
+
+  setSelectedSourceId: (id) =>
+    set({
+      selectedSourceId: id,
+      selectedSegment: null,
+      selectedList: null,
+      selectedContactIds: [],
+      recommendation: null,
+      openAIResponseId: null,
+    }),
+
+  setSelectedSegment: (segment) =>
+    set({
+      selectedSegment: segment,
+      selectedList:
+        segment && segment.sourceId === "hubspot"
+          ? {
+              id: segment.id,
+              name: segment.name,
+              objectType: segment.objectType,
+              size: segment.size,
+            }
+          : null,
+      selectedContactIds: [],
+      recommendation: null,
+      openAIResponseId: null,
+    }),
 
   setSelectedContactIds: (ids) =>
     set({ selectedContactIds: ids, recommendation: null, openAIResponseId: null }),
@@ -124,6 +205,8 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
       portalId: "",
       selectedPrismicDocument: null,
       selectedList: null,
+      selectedSourceId: null,
+      selectedSegment: null,
       selectedContactIds: [],
       selectedContextProperties: [],
       recommendation: null,
@@ -137,6 +220,8 @@ useCampaignStore.subscribe((state) => {
   updateCampaign(state.id, {
     selectedPrismicDocument: state.selectedPrismicDocument,
     selectedList: state.selectedList,
+    selectedSourceId: state.selectedSourceId,
+    selectedSegment: state.selectedSegment,
     selectedContactIds: state.selectedContactIds,
     selectedContextProperties: state.selectedContextProperties,
     recommendation: state.recommendation,

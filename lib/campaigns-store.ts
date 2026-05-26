@@ -1,8 +1,10 @@
 import type {
+  ContactSourceId,
   HubSpotContextPropertySelection,
   HubSpotList,
   PrismicDocumentMetadata,
   RecommendationResponse,
+  Segment,
 } from "./types";
 
 export interface SavedCampaign {
@@ -18,6 +20,8 @@ export interface SavedCampaign {
   // Full state (for resuming mid-flow)
   selectedPrismicDocument?: PrismicDocumentMetadata | null;
   selectedList?: HubSpotList | null;
+  selectedSourceId?: ContactSourceId | null;
+  selectedSegment?: Segment | null;
   selectedContactIds?: string[];
   selectedContextProperties?: HubSpotContextPropertySelection[];
   recommendation?: RecommendationResponse | null;

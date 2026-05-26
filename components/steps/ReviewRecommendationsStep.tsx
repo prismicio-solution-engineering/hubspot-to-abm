@@ -21,7 +21,7 @@ export default function ReviewRecommendationsStep() {
   const { goToStep } = useStepNavigation();
   const id = useCampaignStore((s) => s.id);
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
-  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedSegment = useCampaignStore((s) => s.selectedSegment);
   const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
   const recommendation = useCampaignStore((s) => s.recommendation);
   const openAIResponseId = useCampaignStore((s) => s.openAIResponseId);
@@ -66,7 +66,7 @@ export default function ReviewRecommendationsStep() {
       setGenerationState({ status: "success", result });
       setIsReleaseModalOpen(false);
       updateCampaign(id, {
-        segment: selectedList?.name,
+        segment: selectedSegment?.name,
         contactsCount: selectedContactIds.length,
         release: result.release,
       });

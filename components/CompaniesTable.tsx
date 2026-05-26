@@ -1,12 +1,12 @@
-import type { Company } from "@/lib/types";
+import type { UiCompany } from "@/lib/types";
 
 interface Props {
-  records: Company[];
+  records: UiCompany[];
   portalId: string;
 }
 
-function formatAddress(c: Company): string {
-  return [c.address, c.city, c.zip, c.country]
+function formatAddress(c: UiCompany): string {
+  return [c.city, c.country]
     .filter((v): v is string => typeof v === "string" && v.length > 0)
     .join(", ");
 }
@@ -38,7 +38,9 @@ export default function CompaniesTable({ records, portalId }: Props) {
               <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{c.domain ?? "—"}</td>
               <td className="px-4 py-2.5 text-muted-foreground">{formatAddress(c) || "—"}</td>
               <td className="px-4 py-2.5 text-muted-foreground">{c.industry ?? "—"}</td>
-              <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{c.numberofemployees ?? "—"}</td>
+              <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">
+                {c.numberOfEmployees != null ? c.numberOfEmployees : "—"}
+              </td>
               <td className="px-4 py-2.5">
                 {c.website ? (
                   <a
@@ -54,15 +56,19 @@ export default function CompaniesTable({ records, portalId }: Props) {
                 )}
               </td>
               <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                <a
-                  href={`https://app.hubspot.com/contacts/${portalId}/company/${c.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                  aria-label={`Open ${c.name ?? c.id} in HubSpot`}
-                >
-                  Open ↗
-                </a>
+                {c.sourceId === "hubspot" ? (
+                  <a
+                    href={`https://app.hubspot.com/contacts/${portalId}/company/${c.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                    aria-label={`Open ${c.name ?? c.id} in HubSpot`}
+                  >
+                    Open ↗
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </td>
             </tr>
           ))}

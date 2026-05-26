@@ -31,7 +31,9 @@ function isGeneratePagesPayload(value: unknown): value is GeneratePagesPayload {
     payload.version === "1.0" &&
     payload.target?.type === "prismic_document" &&
     typeof payload.target.documentId === "string" &&
-    payload.source?.type === "hubspot_list" &&
+    !!payload.source &&
+    (payload.source.type === "hubspot_list" ||
+      payload.source.type === "salesforce_campaign") &&
     typeof payload.source.listId === "string" &&
     typeof payload.source.listName === "string" &&
     Array.isArray(payload.contacts)
@@ -140,14 +142,17 @@ export async function POST(req: Request) {
 
   try {
     const prismicDocument = await getPrismicDocument(payload.target.documentId);
-    const contacts = await enrichContactsWithContextProperties(
-      payload.contacts,
-      payload.contextProperties,
-    );
+    const contacts =
+      payload.source.type === "hubspot_list"
+        ? await enrichContactsWithContextProperties(
+          payload.contacts,
+          payload.contextProperties,
+        )
+        : payload.contacts;
     const ai = await runAbmWebSearchAgent({
       input: {
         prismicDocument,
-        hubspot: {
+        crmData: {
           source: payload.source,
           contextProperties: payload.contextProperties ?? [],
           contacts,

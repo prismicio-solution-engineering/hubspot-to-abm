@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import GeneratePagesBar from "./GeneratePagesBar";
-import type { Contact } from "@/lib/types";
+import type { UiContact } from "@/lib/types";
 
 interface Props {
-  records: Contact[];
+  records: UiContact[];
   portalId: string;
   maxSelection: number;
   selectedIds: ReadonlySet<string>;
@@ -15,21 +15,21 @@ interface Props {
   onGenerate: () => void | Promise<void>;
 }
 
-function formatAddress(c: Contact): string {
-  return [c.address, c.city, c.zip, c.country]
+function formatAddress(c: UiContact): string {
+  return [c.city, c.country]
     .filter((v): v is string => typeof v === "string" && v.length > 0)
     .join(", ");
 }
 
-function displayName(c: Contact): string {
-  return [c.firstname, c.lastname].filter(Boolean).join(" ") || "—";
+function displayName(c: UiContact): string {
+  return [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
 }
 
-function displayCompany(c: Contact): string {
-  return c.associatedCompany?.name ?? c.company ?? "—";
+function displayCompany(c: UiContact): string {
+  return c.associatedCompany?.name ?? "—";
 }
 
-function companyDetails(c: Contact): Array<{ label: string; value: string }> {
+function companyDetails(c: UiContact): Array<{ label: string; value: string }> {
   const company = c.associatedCompany;
   if (!company) return [];
 
@@ -37,15 +37,17 @@ function companyDetails(c: Contact): Array<{ label: string; value: string }> {
     { label: "Domain", value: company.domain },
     { label: "Website", value: company.website },
     { label: "Industry", value: company.industry },
-    { label: "Employees", value: company.numberofemployees },
+    {
+      label: "Employees",
+      value:
+        company.numberOfEmployees != null
+          ? String(company.numberOfEmployees)
+          : undefined,
+    },
     { label: "Country", value: company.country },
     { label: "City", value: company.city },
-    {
-      label: "Address",
-      value: [company.address, company.zip].filter(Boolean).join(", "),
-    },
   ].filter((item): item is { label: string; value: string } =>
-    Boolean(item.value),
+    typeof item.value === "string" && item.value.length > 0,
   );
 }
 
@@ -168,8 +170,8 @@ export default function ContactsTable({
                       className="rounded w-4 h-4 accent-primary disabled:cursor-not-allowed"
                     />
                   </td>
-                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.firstname ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.lastname ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.firstName ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-foreground whitespace-nowrap">{c.lastName ?? "—"}</td>
                   <td className="px-4 py-2.5">
                     {c.email ? (
                       <a className="text-primary hover:underline" href={`mailto:${c.email}`}>
@@ -195,17 +197,21 @@ export default function ContactsTable({
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{c.jobtitle ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{c.jobTitle ?? "—"}</td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                    <a
-                      href={`https://app.hubspot.com/contacts/${portalId}/contact/${c.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                      aria-label={`Open ${displayName(c)} in HubSpot`}
-                    >
-                      Open ↗
-                    </a>
+                    {c.sourceId === "hubspot" ? (
+                      <a
+                        href={`https://app.hubspot.com/contacts/${portalId}/contact/${c.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                        aria-label={`Open ${displayName(c)} in HubSpot`}
+                      >
+                        Open ↗
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                 </tr>
               );

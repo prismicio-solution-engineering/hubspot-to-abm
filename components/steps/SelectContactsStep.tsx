@@ -16,7 +16,7 @@ import type {
   ErrorResponse,
   GeneratePagesPayload,
   RecommendationResponse,
-  RecordsResponse,
+  UiRecordsResponse,
 } from "@/lib/types";
 
 const MAX_SELECTION = 20;
@@ -25,7 +25,7 @@ type State =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "success"; data: RecordsResponse };
+  | { status: "success"; data: UiRecordsResponse };
 
 type GenerationState =
   | { status: "idle" }
@@ -42,12 +42,14 @@ export default function SelectContactsStep() {
   const id = useCampaignStore((s) => s.id);
   const portalId = useCampaignStore((s) => s.portalId);
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
-  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedSegment = useCampaignStore((s) => s.selectedSegment);
   const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
   const selectedContextProperties = useCampaignStore((s) => s.selectedContextProperties);
   const setRecommendation = useCampaignStore((s) => s.setRecommendation);
   const setSelectedContactIds = useCampaignStore((s) => s.setSelectedContactIds);
-  const listId = selectedList?.id ?? null;
+
+  const segmentId = selectedSegment?.id ?? null;
+  const sourceId = selectedSegment?.sourceId ?? null;
 
   const [state, setState] = useState<State>({ status: "idle" });
   const [reloadKey, setReloadKey] = useState(0);
@@ -56,7 +58,7 @@ export default function SelectContactsStep() {
   });
 
   useEffect(() => {
-    if (!listId) {
+    if (!segmentId || !sourceId) {
       setState({ status: "idle" });
       return;
     }
@@ -64,11 +66,14 @@ export default function SelectContactsStep() {
     const controller = new AbortController();
     setState({ status: "loading" });
 
+    const url =
+      sourceId === "hubspot"
+        ? `/api/segments/${encodeURIComponent(segmentId)}`
+        : `/api/sources/${encodeURIComponent(sourceId)}/segments/${encodeURIComponent(segmentId)}`;
+
     (async () => {
       try {
-        const res = await fetch(`/api/segments/${encodeURIComponent(listId)}`, {
-          signal: controller.signal,
-        });
+        const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as ErrorResponse;
           setState({
@@ -77,7 +82,9 @@ export default function SelectContactsStep() {
           });
           return;
         }
-        const data = (await res.json()) as RecordsResponse;
+        const raw = await res.json();
+        const data: UiRecordsResponse =
+          sourceId === "hubspot" ? hubspotResponseToUi(raw) : (raw as UiRecordsResponse);
         setState({ status: "success", data });
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
@@ -86,7 +93,7 @@ export default function SelectContactsStep() {
     })();
 
     return () => controller.abort();
-  }, [listId, reloadKey]);
+  }, [segmentId, sourceId, reloadKey]);
 
   const selectedIds = useMemo(
     () => new Set(selectedContactIds),
@@ -103,7 +110,7 @@ export default function SelectContactsStep() {
 
   async function onGenerate() {
     if (state.status !== "success" || state.data.type !== "contact") return;
-    if (!selectedList) return;
+    if (!selectedSegment) return;
     if (!selectedPrismicDocument) {
       setGenerationState({
         status: "error",
@@ -113,16 +120,17 @@ export default function SelectContactsStep() {
     }
 
     const effectiveContextProperties =
-      selectedContextProperties.length > 0
-        ? selectedContextProperties
-        : getStandaloneContextProperties();
+      selectedSegment.sourceId === "hubspot"
+        ? selectedContextProperties.length > 0
+          ? selectedContextProperties
+          : getStandaloneContextProperties()
+        : [];
 
     const requestPayload: GeneratePagesPayload = buildPayload(
       state.data.records,
       selectedIds,
       selectedPrismicDocument,
-      selectedList.id,
-      selectedList.name,
+      selectedSegment,
       effectiveContextProperties,
     );
 
@@ -157,7 +165,7 @@ export default function SelectContactsStep() {
     }
   }
 
-  if (!selectedList) {
+  if (!selectedSegment) {
     return (
       <div className="flex flex-col gap-6">
         <div className="flex flex-col justify-center items-center gap-2 bg-muted/30 px-4 py-12 border-2 border-border border-dashed rounded-lg text-center">
@@ -194,11 +202,11 @@ export default function SelectContactsStep() {
             </span>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-foreground text-sm">{selectedList.name}</span>
-            <TypeBadge type={selectedList.objectType} />
+            <span className="font-semibold text-foreground text-sm">{selectedSegment.name}</span>
+            <TypeBadge type={selectedSegment.objectType} />
           </div>
           <span className="text-muted-foreground text-xs">
-            {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
+            {selectedSegment.size} {selectedSegment.size > 1 ? "records" : "record"}
           </span>
         </div>
       </div>
@@ -244,6 +252,99 @@ export default function SelectContactsStep() {
         ))}
     </div>
   );
+}
+
+// ---- Adapters for the legacy HubSpot /api/segments/[id] endpoint shape ----
+
+interface LegacyHubSpotContact {
+  id: string;
+  firstname?: string;
+  lastname?: string;
+  email?: string;
+  city?: string;
+  country?: string;
+  jobtitle?: string;
+  company?: string;
+  associatedCompany?: LegacyHubSpotCompany;
+}
+
+interface LegacyHubSpotCompany {
+  id: string;
+  name?: string;
+  domain?: string;
+  website?: string;
+  industry?: string;
+  numberofemployees?: string;
+  city?: string;
+  country?: string;
+}
+
+interface LegacyContactsResponse {
+  type: "contact";
+  listName: string;
+  listSize: number;
+  records: LegacyHubSpotContact[];
+}
+
+interface LegacyCompaniesResponse {
+  type: "company";
+  listName: string;
+  listSize: number;
+  records: LegacyHubSpotCompany[];
+}
+
+function hubspotResponseToUi(raw: unknown): UiRecordsResponse {
+  const r = raw as LegacyContactsResponse | LegacyCompaniesResponse;
+  if (r.type === "contact") {
+    return {
+      type: "contact",
+      sourceId: "hubspot",
+      segmentName: r.listName,
+      segmentSize: r.listSize,
+      records: r.records.map((c) => ({
+        id: c.id,
+        firstName: c.firstname,
+        lastName: c.lastname,
+        email: c.email,
+        city: c.city,
+        country: c.country,
+        jobTitle: c.jobtitle,
+        sourceId: "hubspot",
+        associatedCompany: c.associatedCompany
+          ? {
+              id: c.associatedCompany.id,
+              name: c.associatedCompany.name,
+              domain: c.associatedCompany.domain,
+              website: c.associatedCompany.website,
+              industry: c.associatedCompany.industry,
+              numberOfEmployees: c.associatedCompany.numberofemployees
+                ? Number(c.associatedCompany.numberofemployees)
+                : undefined,
+              city: c.associatedCompany.city,
+              country: c.associatedCompany.country,
+              sourceId: "hubspot",
+            }
+          : undefined,
+      })),
+    };
+  }
+  return {
+    type: "company",
+    sourceId: "hubspot",
+    segmentName: r.listName,
+    segmentSize: r.listSize,
+    records: r.records.map((c) => ({
+      id: c.id,
+      name: c.name,
+      domain: c.domain,
+      website: c.website,
+      industry: c.industry,
+      numberOfEmployees: c.numberofemployees ? Number(c.numberofemployees) : undefined,
+      city: c.city,
+      country: c.country,
+      sourceId: "hubspot",
+    })),
+  };
 }
 
 function Skeleton() {

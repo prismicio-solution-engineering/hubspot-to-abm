@@ -4,12 +4,19 @@ import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TypeBadge from "../TypeBadge";
 import { useCampaignStore } from "@/lib/campaign-store";
+import type { ContactSourceId } from "@/lib/types";
+
+function sourceLabel(id: ContactSourceId): string {
+  if (id === "hubspot") return "HubSpot";
+  if (id === "salesforce") return "Salesforce";
+  return id;
+}
 
 export default function SelectedSegmentBox() {
-  const selectedList = useCampaignStore((s) => s.selectedList);
-  const setSelectedList = useCampaignStore((s) => s.setSelectedList);
+  const selectedSegment = useCampaignStore((s) => s.selectedSegment);
+  const setSelectedSegment = useCampaignStore((s) => s.setSelectedSegment);
 
-  if (!selectedList) {
+  if (!selectedSegment) {
     return (
       <section
         aria-label="Selected segment"
@@ -39,11 +46,13 @@ export default function SelectedSegmentBox() {
             Selected segment
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-foreground text-sm">{selectedList.name}</span>
-            <TypeBadge type={selectedList.objectType} />
+            <span className="font-semibold text-foreground text-sm">
+              {sourceLabel(selectedSegment.sourceId)} · {selectedSegment.name}
+            </span>
+            <TypeBadge type={selectedSegment.objectType} />
           </div>
           <span className="text-muted-foreground text-xs">
-            {selectedList.size} {selectedList.size > 1 ? "records" : "record"}
+            {selectedSegment.size} {selectedSegment.size > 1 ? "records" : "record"}
           </span>
         </div>
       </div>
@@ -51,7 +60,7 @@ export default function SelectedSegmentBox() {
         type="button"
         variant="outline"
         size="sm"
-        onClick={() => setSelectedList(null)}
+        onClick={() => setSelectedSegment(null)}
         aria-label="Change selected segment"
       >
         Delete

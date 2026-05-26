@@ -12,7 +12,7 @@ export default function StepIndicator() {
   const currentIndex = Math.max(0, getStepIndex(currentId));
 
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
-  const selectedList = useCampaignStore((s) => s.selectedList);
+  const selectedSegment = useCampaignStore((s) => s.selectedSegment);
   const recommendation = useCampaignStore((s) => s.recommendation);
 
   function isNavigable(i: number): boolean {
@@ -20,7 +20,7 @@ export default function StepIndicator() {
     if (i < currentIndex) return true;
     // Forward: only if prerequisites are met
     if (i === 1) return selectedPrismicDocument !== null;
-    if (i === 2) return selectedPrismicDocument !== null && selectedList !== null;
+    if (i === 2) return selectedPrismicDocument !== null && selectedSegment !== null;
     if (i === 3) return recommendation !== null;
     return false;
   }

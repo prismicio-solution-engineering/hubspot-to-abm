@@ -1,35 +1,68 @@
 import type {
-  Contact,
+  Company,
   GeneratePagesContact,
   GeneratePagesPayload,
   HubSpotContextPropertySelection,
   PrismicDocumentMetadata,
+  Segment,
+  UiCompany,
+  UiContact,
 } from "./types";
 
-function toPayloadContact(c: Contact): GeneratePagesContact {
+function uiCompanyToCompany(c: UiCompany): Company {
+  return {
+    id: c.id,
+    name: c.name,
+    domain: c.domain,
+    website: c.website,
+    industry: c.industry,
+    numberofemployees:
+      c.numberOfEmployees != null ? String(c.numberOfEmployees) : undefined,
+    city: c.city,
+    country: c.country,
+  };
+}
+
+function toPayloadContact(c: UiContact): GeneratePagesContact {
   const out: GeneratePagesContact = { id: c.id };
-  if (c.firstname) out.firstName = c.firstname;
-  if (c.lastname) out.lastName = c.lastname;
-  if (c.company) out.company = c.company;
+  if (c.firstName) out.firstName = c.firstName;
+  if (c.lastName) out.lastName = c.lastName;
+  if (c.associatedCompany?.name) out.company = c.associatedCompany.name;
   if (c.associatedCompany?.domain) out.companyDomain = c.associatedCompany.domain;
   if (c.associatedCompany?.industry) out.companyIndustry = c.associatedCompany.industry;
-  if (c.jobtitle) out.jobTitle = c.jobtitle;
-  if (c.associatedCompany) out.associatedCompany = c.associatedCompany;
+  if (c.jobTitle) out.jobTitle = c.jobTitle;
+  if (c.associatedCompany) out.associatedCompany = uiCompanyToCompany(c.associatedCompany);
   return out;
 }
 
 export function buildPayload(
-  contacts: readonly Contact[],
+  contacts: readonly UiContact[],
   selectedIds: ReadonlySet<string>,
   prismicDocument: PrismicDocumentMetadata,
-  listId: string,
-  listName: string,
+  segment: Segment,
   contextProperties: readonly HubSpotContextPropertySelection[] = [],
   now: Date = new Date(),
 ): GeneratePagesPayload {
   const selected = contacts
     .filter((c) => selectedIds.has(c.id))
     .map(toPayloadContact);
+
+  const source: GeneratePagesPayload["source"] =
+    segment.sourceId === "hubspot"
+      ? {
+          type: "hubspot_list",
+          listId: segment.id,
+          listName: segment.name,
+          sourceId: "hubspot",
+        }
+      : {
+          type: "salesforce_campaign",
+          listId: segment.id,
+          listName: segment.name,
+          campaignId: segment.id,
+          campaignName: segment.name,
+          sourceId: "salesforce",
+        };
 
   return {
     version: "1.0",
@@ -41,11 +74,7 @@ export function buildPayload(
       customType: prismicDocument.type,
       lang: prismicDocument.lang,
     },
-    source: {
-      type: "hubspot_list",
-      listId,
-      listName,
-    },
+    source,
     contextProperties: contextProperties.filter((property) => property.name.length > 0),
     contacts: selected,
   };

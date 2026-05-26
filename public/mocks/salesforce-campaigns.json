@@ -1,0 +1,57 @@
+{
+  "totalSize": 3,
+  "done": true,
+  "records": [
+    {
+      "attributes": {
+        "type": "Campaign",
+        "url": "/services/data/v66.0/sobjects/Campaign/701Wx00000IYOaIIAX"
+      },
+      "Id": "701Wx00000IYOaIIAX",
+      "Name": "Q3 2026 ABM — French Tech",
+      "IsActive": true,
+      "Type": "Account-Based Marketing",
+      "Status": "In Progress",
+      "StartDate": "2026-07-01",
+      "EndDate": "2026-09-30",
+      "NumberOfContacts": 6,
+      "NumberOfLeads": 0,
+      "Description": "ABM (Account-Based Marketing) campaign targeting mid-market French tech companies",
+      "CreatedDate": "2026-05-25T13:45:38.000+0000"
+    },
+    {
+      "attributes": {
+        "type": "Campaign",
+        "url": "/services/data/v66.0/sobjects/Campaign/701Wx00000IYObJIAX"
+      },
+      "Id": "701Wx00000IYObJIAX",
+      "Name": "2026 MarTech Paris — Event Follow-up",
+      "IsActive": true,
+      "Type": "Event",
+      "Status": "Planned",
+      "StartDate": "2026-06-15",
+      "EndDate": "2026-07-15",
+      "NumberOfContacts": 4,
+      "NumberOfLeads": 0,
+      "Description": "Follow-up campaign for contacts met at MarTech Paris 2026 conference",
+      "CreatedDate": "2026-05-20T10:12:04.000+0000"
+    },
+    {
+      "attributes": {
+        "type": "Campaign",
+        "url": "/services/data/v66.0/sobjects/Campaign/701Wx00000IYOcKIAX"
+      },
+      "Id": "701Wx00000IYOcKIAX",
+      "Name": "Enterprise DACH Q4 2026",
+      "IsActive": true,
+      "Type": "Account-Based Marketing",
+      "Status": "Planned",
+      "StartDate": "2026-10-01",
+      "EndDate": "2026-12-31",
+      "NumberOfContacts": 3,
+      "NumberOfLeads": 0,
+      "Description": "ABM campaign targeting enterprise accounts in DACH region (Germany, Austria, Switzerland)",
+      "CreatedDate": "2026-05-22T09:30:15.000+0000"
+    }
+  ]
+}

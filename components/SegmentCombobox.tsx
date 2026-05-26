@@ -3,30 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, ChevronDown, Loader2, Users } from "lucide-react";
 
-function HubSpotIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="-1 -0.5 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M18.164 7.931V5.085a2.198 2.198 0 0 0 1.266-1.978V3.06A2.198 2.198 0 0 0 17.233.863h-.047a2.198 2.198 0 0 0-2.196 2.198v.047c0 .87.507 1.627 1.266 1.978v2.846a6.232 6.232 0 0 0-2.962 1.302L6.023 4.382a2.44 2.44 0 0 0 .07-.556 2.46 2.46 0 1 0-2.46 2.46c.44 0 .856-.12 1.213-.327l7.198 4.424a6.23 6.23 0 0 0-.806 3.073c0 1.138.306 2.204.84 3.118L9.84 17.81a1.98 1.98 0 0 0-.58-.094 1.994 1.994 0 1 0 1.994 1.994 1.978 1.978 0 0 0-.324-1.084l2.21-2.196a6.257 6.257 0 1 0 5.025-8.5zm-.978 9.504a3.282 3.282 0 1 1 0-6.564 3.282 3.282 0 0 1 0 6.564z" fill="#FF7A59"/>
-    </svg>
-  );
-}
-
 import { cn } from "@/lib/utils";
 import TypeBadge from "./TypeBadge";
-import type { ErrorResponse, HubSpotList, SearchResponse } from "@/lib/types";
+import type { ContactSourceId, ErrorResponse, Segment } from "@/lib/types";
 
 interface Props {
-  onSegmentSelected: (segment: HubSpotList) => void;
-  sourceIcon?: React.ReactNode;
+  sourceId: ContactSourceId | null;
+  value: Segment | null;
+  onSelect: (segment: Segment | null) => void;
 }
 
-export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props) {
+interface SegmentsResponse {
+  segments: Segment[];
+}
+
+export default function SegmentCombobox({ sourceId, value, onSelect }: Props) {
   const [query, setQuery] = useState("");
-  const [segments, setSegments] = useState<HubSpotList[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<HubSpotList | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,21 +32,28 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
   }, [open]);
 
   useEffect(() => {
+    if (!sourceId) {
+      setSegments([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetch("/api/lists")
+    fetch(`/api/sources/${encodeURIComponent(sourceId)}/segments`)
       .then(async (res) => {
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as ErrorResponse;
           throw new Error(data.error ?? `Error ${res.status}`);
         }
-        return res.json() as Promise<SearchResponse>;
+        return res.json() as Promise<SegmentsResponse>;
       })
-      .then(({ lists }) => {
+      .then(({ segments: items }) => {
         if (!cancelled) {
-          setSegments(lists);
+          setSegments(items);
           setLoading(false);
         }
       })
@@ -64,7 +67,7 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sourceId]);
 
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
@@ -78,16 +81,17 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
 
   const filtered = query.trim()
     ? segments.filter((seg) =>
-        seg.name.toLowerCase().includes(query.toLowerCase()),
-      )
+      seg.name.toLowerCase().includes(query.toLowerCase()),
+    )
     : segments;
 
-  function handleSelect(seg: HubSpotList) {
-    setSelected(seg);
+  function handleSelect(seg: Segment) {
     setQuery("");
     setOpen(false);
-    onSegmentSelected(seg);
+    onSelect(seg);
   }
+
+  const disabled = !sourceId;
 
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
@@ -98,9 +102,13 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
       <div className="relative">
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            if (!disabled) setOpen((v) => !v);
+          }}
+          disabled={disabled}
           className={cn(
             "flex justify-between items-center gap-2 bg-background px-3 border rounded-md w-full h-9 text-sm transition-colors",
+            disabled && "opacity-60 cursor-not-allowed",
             open
               ? "border-ring ring-2 ring-ring ring-offset-1"
               : "border-input hover:border-ring/50",
@@ -108,20 +116,21 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
           aria-expanded={open}
           aria-haspopup="listbox"
         >
-          {selected ? (
+          {value ? (
             <span className="flex items-center gap-2 truncate">
               <Users className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span className="font-medium text-foreground truncate">{selected.name}</span>
-              <TypeBadge type={selected.objectType} />
+              <span className="font-medium text-foreground truncate">{value.name}</span>
+              <TypeBadge type={value.objectType} />
             </span>
           ) : (
             <span className="flex items-center gap-2 text-muted-foreground">
-              {sourceIcon ?? <HubSpotIcon className="w-5 h-5" />}
-              {loading
-                ? "Loading segments…"
-                : segments.length > 0
-                  ? `${segments.length} segments available`
-                  : "No segments found"}
+              {disabled
+                ? "Select a CRM source first"
+                : loading
+                  ? "Loading segments…"
+                  : segments.length > 0
+                    ? `${segments.length} segments available`
+                    : "No segments found"}
             </span>
           )}
           <ChevronDown
@@ -166,19 +175,19 @@ export default function SegmentCombobox({ onSegmentSelected, sourceIcon }: Props
           ) : (
             <ul role="listbox" className="py-1 max-h-60 overflow-y-auto">
               {filtered.map((seg) => (
-                <li key={seg.id} role="option" aria-selected={selected?.id === seg.id}>
+                <li key={seg.id} role="option" aria-selected={value?.id === seg.id}>
                   <button
                     type="button"
                     onClick={() => handleSelect(seg)}
                     className={cn(
                       "flex items-center gap-3 hover:bg-muted px-3 py-2 w-full text-sm text-left transition-colors",
-                      selected?.id === seg.id && "bg-accent",
+                      value?.id === seg.id && "bg-accent",
                     )}
                   >
                     <Users
                       className={cn(
                         "w-4 h-4 shrink-0",
-                        selected?.id === seg.id
+                        value?.id === seg.id
                           ? "text-primary"
                           : "text-muted-foreground",
                       )}

@@ -1,0 +1,111 @@
+{
+  "totalSize": 3,
+  "done": true,
+  "records": [
+    {
+      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdaIAA" },
+      "ContactId": "003Wx00000AZefgIAT",
+      "Status": "Sent",
+      "Contact": {
+        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZefgIAT" },
+        "Id": "003Wx00000AZefgIAT",
+        "FirstName": "Klaus",
+        "LastName": "Hoffmann",
+        "Email": "klaus.hoffmann@steinwerk-industries.de",
+        "Phone": "+49 30 1234 5670",
+        "Title": "Chief Marketing Officer",
+        "Department": "Marketing",
+        "LeadSource": "Partner Referral",
+        "MailingCity": "Berlin",
+        "MailingCountry": "Germany",
+        "AccountId": "001Wx00000IYNFdIAP",
+        "Persona__c": "C-Level Executive",
+        "Account": {
+          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP" },
+          "Id": "001Wx00000IYNFdIAP",
+          "Name": "Steinwerk Industries GmbH",
+          "Website": "https://www.steinwerk-industries.de",
+          "Industry": "Industrial Manufacturing",
+          "NumberOfEmployees": 12500,
+          "AnnualRevenue": 980000000,
+          "BillingCity": "Berlin",
+          "BillingCountry": "Germany",
+          "Phone": "+49 30 1234 5600",
+          "Type": "Prospect",
+          "Description": "Family-owned industrial manufacturer of precision components for automotive and aerospace",
+          "ABM_Tier__c": "Tier 1"
+        }
+      }
+    },
+    {
+      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdbIAA" },
+      "ContactId": "003Wx00000AZfhiIAT",
+      "Status": "Sent",
+      "Contact": {
+        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZfhiIAT" },
+        "Id": "003Wx00000AZfhiIAT",
+        "FirstName": "Annika",
+        "LastName": "Becker",
+        "Email": "annika.becker@steinwerk-industries.de",
+        "Phone": "+49 30 1234 5671",
+        "Title": "VP Digital Marketing",
+        "Department": "Marketing",
+        "LeadSource": "Web",
+        "MailingCity": "Berlin",
+        "MailingCountry": "Germany",
+        "AccountId": "001Wx00000IYNFdIAP",
+        "Persona__c": "Marketing Decision Maker",
+        "Account": {
+          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP" },
+          "Id": "001Wx00000IYNFdIAP",
+          "Name": "Steinwerk Industries GmbH",
+          "Website": "https://www.steinwerk-industries.de",
+          "Industry": "Industrial Manufacturing",
+          "NumberOfEmployees": 12500,
+          "AnnualRevenue": 980000000,
+          "BillingCity": "Berlin",
+          "BillingCountry": "Germany",
+          "Phone": "+49 30 1234 5600",
+          "Type": "Prospect",
+          "Description": "Family-owned industrial manufacturer of precision components for automotive and aerospace",
+          "ABM_Tier__c": "Tier 1"
+        }
+      }
+    },
+    {
+      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdcIAA" },
+      "ContactId": "003Wx00000AZgijIAT",
+      "Status": "Sent",
+      "Contact": {
+        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZgijIAT" },
+        "Id": "003Wx00000AZgijIAT",
+        "FirstName": "Matthias",
+        "LastName": "Wagner",
+        "Email": "matthias.wagner@alpinetech.ch",
+        "Phone": "+41 44 567 89 01",
+        "Title": "Head of Marketing & Communications",
+        "Department": "Marketing",
+        "LeadSource": "Cold Outreach",
+        "MailingCity": "Zürich",
+        "MailingCountry": "Switzerland",
+        "AccountId": "001Wx00000IYNGeIAP",
+        "Persona__c": "Marketing Decision Maker",
+        "Account": {
+          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNGeIAP" },
+          "Id": "001Wx00000IYNGeIAP",
+          "Name": "AlpineTech AG",
+          "Website": "https://www.alpinetech.ch",
+          "Industry": "Information Technology Services",
+          "NumberOfEmployees": 3400,
+          "AnnualRevenue": 410000000,
+          "BillingCity": "Zürich",
+          "BillingCountry": "Switzerland",
+          "Phone": "+41 44 567 00 00",
+          "Type": "Prospect",
+          "Description": "Swiss IT services provider serving enterprise customers in finance and insurance",
+          "ABM_Tier__c": "Tier 1"
+        }
+      }
+    }
+  ]
+}
