@@ -26,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import SegmentCombobox from "@/components/SegmentCombobox";
 import AccountsModal from "./AccountsModal";
 import {
-  DEMO_SHOWCASES,
   createDemoShowcase,
   getDefaultDemoShowcase,
   type DemoShowcase,
@@ -75,6 +74,7 @@ interface GenState {
 }
 
 interface DemoFormState {
+  id?: string;
   name: string;
   repository: string;
   masterToken: string;
@@ -88,6 +88,7 @@ interface DemoFormState {
 }
 
 const CUSTOM_DEMO_STORAGE_KEY = "abm_prototype_custom_demo_v1";
+const CUSTOM_DEMOS_STORAGE_KEY = "abm_prototype_custom_demos_v1";
 
 function toGeneratePagesContact(
   record: Contact | Company,
@@ -117,6 +118,7 @@ function toGeneratePagesContact(
 
 function demoToFormState(demo: DemoShowcase): DemoFormState {
   return {
+    id: demo.id,
     name: demo.name,
     repository: demo.repository,
     masterToken: demo.masterToken ?? "",
@@ -130,56 +132,80 @@ function demoToFormState(demo: DemoShowcase): DemoFormState {
   };
 }
 
-function loadCustomDemo(): DemoShowcase | null {
-  if (typeof window === "undefined") return null;
+function createCustomDemoId(form: DemoFormState): string {
+  return [form.repository, form.documentUid || form.baselineDocumentId || form.name]
+    .join("-")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "custom-demo";
+}
+
+function normalizeSavedDemo(value: DemoShowcase): DemoShowcase {
+  return createDemoShowcase({
+    ...value,
+    id: value.id,
+    documentLabel: value.documentLabel,
+    releasePrefix: value.releasePrefix,
+    editedLabel: value.editedLabel,
+  });
+}
+
+function readStoredDemos(raw: string | null): DemoShowcase[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as DemoShowcase[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeSavedDemo);
+  } catch {
+    return [];
+  }
+}
+
+function loadSavedDemos(): DemoShowcase[] {
+  if (typeof window === "undefined") return [];
+  const demos = readStoredDemos(localStorage.getItem(CUSTOM_DEMOS_STORAGE_KEY));
+  if (demos.length > 0) return demos;
+
   try {
     const raw = localStorage.getItem(CUSTOM_DEMO_STORAGE_KEY);
-    if (!raw) return null;
-    return createDemoShowcase(JSON.parse(raw) as DemoFormState);
+    if (!raw) return [];
+    const legacyDemo = createDemoShowcase(JSON.parse(raw) as DemoFormState);
+    localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify([legacyDemo]));
+    localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+    return [legacyDemo];
   } catch {
-    return null;
+    return [];
   }
 }
 
-function saveCustomDemo(form: DemoFormState): DemoShowcase {
-  const isBuilderUrl = isPrismicBuilderUrl(form.previewUrl);
+function saveCustomDemo(
+  form: DemoFormState,
+  currentDemos: DemoShowcase[],
+): { demo: DemoShowcase; demos: DemoShowcase[] } {
+  const existingSavedDemo = form.id
+    ? currentDemos.some((demo) => demo.id === form.id)
+    : false;
   const demo = createDemoShowcase({
     ...form,
-    canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview,
+    canEmbedPreview: true,
     documentLabel: form.name,
     releasePrefix: form.name,
-    id: "custom-demo",
+    id: existingSavedDemo && form.id ? form.id : createCustomDemoId(form),
     editedLabel: "Custom demo",
   });
-  const persistedForm = {
-    ...form,
-    masterToken: "",
-    writeToken: "",
-    canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview,
-  };
-  localStorage.setItem(
-    CUSTOM_DEMO_STORAGE_KEY,
-    JSON.stringify(persistedForm),
-  );
-  return demo;
-}
-
-function isPrismicBuilderUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.endsWith(".prismic.io") && parsed.pathname.includes("/builder/");
-  } catch {
-    return false;
-  }
+  const demos = [demo, ...currentDemos.filter((saved) => saved.id !== demo.id)];
+  localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify(demos));
+  localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+  return { demo, demos };
 }
 
 export default function PrototypeView() {
   const [selectedDemo, setSelectedDemo] = useState<DemoShowcase>(
     getDefaultDemoShowcase(),
   );
-  const [isDemoMenuOpen, setIsDemoMenuOpen] = useState(false);
   const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
-  const [customDemo, setCustomDemo] = useState<DemoShowcase | null>(null);
+  const [savedDemos, setSavedDemos] = useState<DemoShowcase[]>([]);
   const [step, setStep] = useState<Step>("idle");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -201,9 +227,10 @@ export default function PrototypeView() {
   }, [messages, step, genState]);
 
   useEffect(() => {
-    const saved = loadCustomDemo();
-    if (!saved) return;
-    setCustomDemo(saved);
+    const demos = loadSavedDemos();
+    if (demos.length === 0) return;
+    const saved = demos[0];
+    setSavedDemos(demos);
     setSelectedDemo(saved);
     setMessages([
       {
@@ -231,7 +258,6 @@ export default function PrototypeView() {
 
   function handleDemoSelected(demo: DemoShowcase) {
     setSelectedDemo(demo);
-    setIsDemoMenuOpen(false);
     setStep("idle");
     setSelectedSegment(null);
     setRecords([]);
@@ -249,8 +275,8 @@ export default function PrototypeView() {
   }
 
   function handleDemoSaved(form: DemoFormState) {
-    const demo = saveCustomDemo(form);
-    setCustomDemo(demo);
+    const { demo, demos } = saveCustomDemo(form, savedDemos);
+    setSavedDemos(demos);
     setIsDemoDialogOpen(false);
     handleDemoSelected(demo);
   }
@@ -585,17 +611,14 @@ export default function PrototypeView() {
             </span>
           </div>
           <div className="ml-auto">
-            <DemoMenu
-              selectedDemo={selectedDemo}
-              customDemo={customDemo}
-              open={isDemoMenuOpen}
-              onOpenChange={setIsDemoMenuOpen}
-              onSelect={handleDemoSelected}
-              onConfigure={() => {
-                setIsDemoMenuOpen(false);
-                setIsDemoDialogOpen(true);
-              }}
-            />
+            <button
+              type="button"
+              onClick={() => setIsDemoDialogOpen(true)}
+              className="flex items-center gap-1.5 bg-primary px-3 py-1.5 rounded-md font-medium text-primary-foreground text-xs hover:bg-primary/90 transition-colors"
+            >
+              <MonitorPlay className="w-3.5 h-3.5" />
+              Demo
+            </button>
           </div>
         </div>
 
@@ -616,6 +639,7 @@ export default function PrototypeView() {
       <DemoSetupDialog
         open={isDemoDialogOpen}
         initialDemo={selectedDemo}
+        savedDemos={savedDemos}
         onOpenChange={setIsDemoDialogOpen}
         onSave={handleDemoSaved}
       />
@@ -623,76 +647,16 @@ export default function PrototypeView() {
   );
 }
 
-function DemoMenu({
-  selectedDemo,
-  customDemo,
-  open,
-  onOpenChange,
-  onSelect,
-  onConfigure,
-}: {
-  selectedDemo: DemoShowcase;
-  customDemo: DemoShowcase | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSelect: (demo: DemoShowcase) => void;
-  onConfigure: () => void;
-}) {
-  const demos = customDemo ? [...DEMO_SHOWCASES, customDemo] : DEMO_SHOWCASES;
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className="flex items-center gap-1.5 bg-primary px-3 py-1.5 rounded-md font-medium text-primary-foreground text-xs hover:bg-primary/90 transition-colors"
-      >
-        <MonitorPlay className="w-3.5 h-3.5" />
-        Demo
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="top-full right-0 z-50 absolute bg-card shadow-lg mt-1 border border-border rounded-md min-w-[260px] overflow-hidden">
-          {demos.map((demo) => (
-            <button
-              key={demo.id}
-              type="button"
-              onClick={() => onSelect(demo)}
-              className={`flex flex-col gap-0.5 hover:bg-muted px-3 py-2 w-full text-left transition-colors ${
-                selectedDemo.id === demo.id ? "bg-accent" : ""
-              }`}
-            >
-              <span className="font-medium text-foreground text-sm">{demo.name}</span>
-              <span className="text-muted-foreground text-xs truncate">
-                {demo.documentLabel}
-              </span>
-            </button>
-          ))}
-          <div className="border-border border-t p-1">
-            <button
-              type="button"
-              onClick={onConfigure}
-              className="flex items-center gap-2 hover:bg-muted px-2 py-2 rounded w-full font-medium text-primary text-sm transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Configure demo
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function DemoSetupDialog({
   open,
   initialDemo,
+  savedDemos,
   onOpenChange,
   onSave,
 }: {
   open: boolean;
   initialDemo: DemoShowcase;
+  savedDemos: DemoShowcase[];
   onOpenChange: (open: boolean) => void;
   onSave: (form: DemoFormState) => void;
 }) {
@@ -707,7 +671,6 @@ function DemoSetupDialog({
     form.baselineDocumentId.trim().length > 0 &&
     form.customType.trim().length > 0 &&
     form.lang.trim().length > 0;
-  const previewIsBuilderUrl = isPrismicBuilderUrl(form.previewUrl);
 
   useEffect(() => {
     if (open) setForm(demoToFormState(initialDemo));
@@ -760,6 +723,12 @@ function DemoSetupDialog({
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  function selectSavedDemo(demo: DemoShowcase) {
+    setForm(demoToFormState(demo));
+    setDocumentQuery("");
+    setDocumentError(null);
+  }
+
   function previewUrlFromDocument(document: PrismicDocumentMetadata): string {
     if (!document.url) return "";
     if (/^https?:\/\//.test(document.url)) return document.url;
@@ -768,15 +737,17 @@ function DemoSetupDialog({
 
   function selectDocument(document: PrismicDocumentMetadata) {
     const label = document.metaTitle ?? document.uid ?? document.id;
+    const documentPreviewUrl = previewUrlFromDocument(document);
     setForm((current) => ({
       ...current,
+      id: document.id === current.baselineDocumentId ? current.id : undefined,
       name: label,
       baselineDocumentId: document.id,
       documentUid: document.uid ?? "",
       customType: document.type,
       lang: document.lang,
-      previewUrl: previewUrlFromDocument(document),
-      canEmbedPreview: Boolean(previewUrlFromDocument(document)),
+      previewUrl: documentPreviewUrl || current.previewUrl,
+      canEmbedPreview: true,
     }));
     setDocumentQuery("");
   }
@@ -798,20 +769,25 @@ function DemoSetupDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
             <DemoField
               label="Prismic repository"
               value={form.repository}
               onChange={(value) =>
                 setForm((current) => ({
                   ...current,
+                  id: undefined,
                   repository: value,
                   baselineDocumentId: "",
                   documentUid: "",
-                  previewUrl: "",
                 }))
               }
               placeholder="template-landing"
+            />
+            <SavedDemoPicker
+              demos={savedDemos}
+              selectedDemoId={form.id}
+              onSelect={selectSavedDemo}
             />
           </div>
 
@@ -862,30 +838,10 @@ function DemoSetupDialog({
               className="mt-1.5"
             />
             <p className="mt-1.5 text-muted-foreground text-xs">
-              Use the public page URL for the right-side preview. Prismic Builder URLs open
-              the editor and cannot be embedded.
+              Leave empty to keep the default Martech preview. Add a public page URL to
+              load it in the right-side preview.
             </p>
           </div>
-
-          <label className="mt-4 flex items-start gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={form.canEmbedPreview && !previewIsBuilderUrl}
-              onChange={(e) => update("canEmbedPreview", e.target.checked)}
-              disabled={previewIsBuilderUrl}
-              className="mt-0.5 rounded accent-primary"
-            />
-            <span>
-              Load this URL inside the preview pane. Leave unchecked when the page blocks
-              iframe embedding.
-            </span>
-          </label>
-          {previewIsBuilderUrl && (
-            <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-amber-800 text-xs">
-              This is a Prismic Builder URL. The prototype will open it in a new tab
-              instead of embedding it.
-            </p>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -923,6 +879,93 @@ function DemoField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
+    </div>
+  );
+}
+
+function SavedDemoPicker({
+  demos,
+  selectedDemoId,
+  onSelect,
+}: {
+  demos: DemoShowcase[];
+  selectedDemoId?: string;
+  onSelect: (demo: DemoShowcase) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedDemo = demos.find((demo) => demo.id === selectedDemoId);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function handleSelect(demo: DemoShowcase) {
+    onSelect(demo);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1.5">
+      <Label>Saved demos</Label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          disabled={demos.length === 0}
+          className={cn(
+            "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm transition-colors",
+            open
+              ? "border-ring ring-2 ring-ring ring-offset-1"
+              : "border-input hover:border-ring/50",
+            demos.length === 0 && "cursor-not-allowed opacity-60",
+          )}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        >
+          <span className="min-w-0 truncate text-left">
+            {selectedDemo
+              ? selectedDemo.name
+              : demos.length > 0
+                ? "Select saved demo"
+                : "No saved demos"}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+
+        {open && demos.length > 0 && (
+          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border bg-card py-1 shadow-lg">
+            {demos.map((demo) => (
+              <button
+                key={demo.id}
+                type="button"
+                onClick={() => handleSelect(demo)}
+                className={cn(
+                  "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                  selectedDemoId === demo.id && "bg-accent",
+                )}
+              >
+                <span className="truncate font-medium text-foreground">{demo.name}</span>
+                <span className="truncate text-muted-foreground text-xs">
+                  {demo.repository} · {demo.documentUid ?? demo.baselineDocumentId}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1103,51 +1146,6 @@ function DemoDocumentPicker({
 function DemoPreview({ demo }: { demo: DemoShowcase }) {
   if (!demo.previewUrl) return <MockLandingPage demo={demo} />;
 
-  const isBuilderUrl = isPrismicBuilderUrl(demo.previewUrl);
-
-  if (!demo.canEmbedPreview || isBuilderUrl) {
-    return (
-      <div className="flex flex-col bg-white min-h-full">
-        <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-2 border-border border-b">
-          <div className="flex min-w-0 flex-col">
-            <span className="font-medium text-foreground text-xs">Base page preview</span>
-            <span className="text-muted-foreground text-xs truncate">{demo.previewUrl}</span>
-          </div>
-          <a
-            href={demo.previewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1.5 border border-border rounded-md font-medium text-foreground text-xs transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Open
-          </a>
-        </div>
-        <div className="flex flex-col items-center justify-center flex-1 px-6 py-16 text-center">
-          <div className="flex items-center justify-center bg-primary/10 mb-4 rounded-lg w-11 h-11">
-            <MonitorPlay className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="font-semibold text-foreground text-base">{demo.documentLabel}</h2>
-          <p className="mt-2 max-w-md text-muted-foreground text-sm leading-6">
-            This demo is connected to Prismic document {demo.baselineDocumentId}.{" "}
-            {isBuilderUrl
-              ? "Prismic Builder pages cannot be embedded here, but you can open the document in Prismic."
-              : "The live page opens in a new tab because this URL is not configured for embedding."}
-          </p>
-          <a
-            href={demo.previewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary/90 mt-5 px-3 py-2 rounded-md font-medium text-primary-foreground text-sm transition-colors"
-          >
-            <ExternalLink className="w-4 h-4" />
-            {isBuilderUrl ? "Open in Prismic" : "Open base page"}
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col bg-white min-h-full">
       <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-2 border-border border-b">
@@ -1166,7 +1164,7 @@ function DemoPreview({ demo }: { demo: DemoShowcase }) {
         </a>
       </div>
       <iframe
-        key={demo.id}
+        key={`${demo.id}:${demo.previewUrl}`}
         src={demo.previewUrl}
         title={`${demo.name} preview`}
         className="flex-1 w-full min-h-[calc(100vh-88px)] bg-white"
