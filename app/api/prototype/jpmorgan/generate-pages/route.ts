@@ -22,7 +22,8 @@ function isValidPayload(value: unknown): value is GeneratePagesPayload {
     p.version === "1.0" &&
     p.target?.type === "prismic_document" &&
     typeof p.target.documentId === "string" &&
-    p.source?.type === "hubspot_list" &&
+    !!p.source &&
+    (p.source.type === "hubspot_list" || p.source.type === "salesforce_campaign") &&
     Array.isArray(p.contacts) &&
     p.contacts.length >= 1 &&
     p.contacts.length <= 20

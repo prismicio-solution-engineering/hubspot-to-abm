@@ -5,16 +5,17 @@ import { Trash2, Send } from "lucide-react";
 
 import SegmentCombobox from "@/components/SegmentCombobox";
 import AccountsModal from "./AccountsModal";
+import { CRM_LABELS, CrmIcon } from "./CrmIcons";
+import { buildPayload } from "@/lib/payload";
 import type {
-  HubSpotList,
-  Contact,
-  Company,
-  RecordsResponse,
-  GeneratePagesContact,
-  GeneratePagesPayload,
-  RecommendationResponse,
+  ContactSourceId,
+  PrismicDocumentMetadata,
   PrismicGenerationResult,
+  RecommendationResponse,
   Segment,
+  UiCompany,
+  UiContact,
+  UiRecordsResponse,
 } from "@/lib/types";
 
 const BASELINE_DOCUMENT_ID = "ae9WThYAACoALXhJ";
@@ -47,29 +48,29 @@ interface GenState {
   fakeProgress: number;
 }
 
-function toGeneratePagesContact(
-  record: Contact | Company,
-  type: "contact" | "company",
-): GeneratePagesContact {
-  if (type === "contact") {
-    const c = record as Contact;
-    return {
-      id: c.id,
-      firstName: c.firstname,
-      lastName: c.lastname,
-      company: c.associatedCompany?.name ?? c.company,
-      companyDomain: c.associatedCompany?.domain,
-      companyIndustry: c.associatedCompany?.industry,
-      jobTitle: c.jobtitle,
-      associatedCompany: c.associatedCompany,
-    };
-  }
-  const co = record as Company;
+// TODO: prototype hardcodes baselineDocumentId; the main flow loads real metadata via
+// /api/prismic/documents/[id]. Synthesize a PrismicDocumentMetadata with sensible defaults
+// so buildPayload() can build the standard payload shape.
+function synthesizePrismicDocumentMetadata(
+  baselineDocumentId: string,
+): PrismicDocumentMetadata {
   return {
-    id: co.id,
-    company: co.name,
-    companyDomain: co.domain,
-    companyIndustry: co.industry,
+    id: baselineDocumentId,
+    uid: null,
+    type: "page",
+    lang: "en-us",
+    url: null,
+    firstPublicationDate: null,
+    lastPublicationDate: null,
+    metaTitle: null,
+  };
+}
+
+function companyToSyntheticContact(company: UiCompany): UiContact {
+  return {
+    id: company.id,
+    sourceId: company.sourceId,
+    associatedCompany: company,
   };
 }
 
@@ -77,8 +78,6 @@ interface PrototypeViewProps {
   preview?: ReactNode;
   previewTitle?: string;
   previewUrl?: string;
-  segmentSourceIcon?: ReactNode;
-  segmentPromptText?: string;
   generatePagesEndpoint?: string;
   generateAbmPagesEndpoint?: string;
   baselineDocumentId?: string;
@@ -88,8 +87,6 @@ export default function PrototypeView({
   preview,
   previewTitle,
   previewUrl,
-  segmentSourceIcon,
-  segmentPromptText,
   generatePagesEndpoint = "/api/generate-pages",
   generateAbmPagesEndpoint = "/api/prismic/generate-abm-pages",
   baselineDocumentId = BASELINE_DOCUMENT_ID,
@@ -101,8 +98,9 @@ export default function PrototypeView({
       text: "Hi! I can help you create personalized variations of this page for your ABM campaigns. What would you like to do?",
     },
   ]);
-  const [selectedSegment, setSelectedSegment] = useState<HubSpotList | null>(null);
-  const [records, setRecords] = useState<(Contact | Company)[]>([]);
+  const [activeSource, setActiveSource] = useState<ContactSourceId | null>(null);
+  const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
+  const [records, setRecords] = useState<(UiContact | UiCompany)[]>([]);
   const [recordType, setRecordType] = useState<"contact" | "company">("contact");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [genState, setGenState] = useState<GenState | null>(null);
@@ -128,32 +126,38 @@ export default function PrototypeView({
     setMessages((prev) => [...prev, msg]);
   }
 
-  function handleActionClick() {
-    push({ role: "user", text: "Personalize for a HubSpot Segment" });
+  function handleActionClick(sourceId: ContactSourceId) {
+    const label = CRM_LABELS[sourceId];
+    const segmentNoun = sourceId === "salesforce" ? "campaign" : "segment";
+    setActiveSource(sourceId);
+    push({ role: "user", text: `Personalize for a ${label} ${segmentNoun}` });
     push({
       role: "ai",
-      text: segmentPromptText ?? "Sure! Select the HubSpot segment you'd like to personalize this page for:",
+      text: `Sure! Select the ${label} ${segmentNoun} you'd like to personalize this page for:`,
     });
     setStep("segment_selecting");
   }
 
-  async function handleSegmentSelected(segment: HubSpotList) {
+  async function handleSegmentSelected(segment: Segment) {
+    if (!activeSource) return;
     setSelectedSegment(segment);
     push({ role: "user", text: `${segment.name} · ${segment.size} records` });
     push({ role: "ai", text: `Loading accounts from "${segment.name}"…` });
     setStep("loading_contacts");
 
     try {
-      const res = await fetch(`/api/segments/${segment.id}`);
+      const res = await fetch(
+        `/api/sources/${encodeURIComponent(activeSource)}/segments/${encodeURIComponent(segment.id)}`,
+      );
       if (!res.ok) throw new Error("Failed");
-      const data = (await res.json()) as RecordsResponse;
+      const data = (await res.json()) as UiRecordsResponse;
       setRecords(data.records);
       setRecordType(data.type);
       setMessages((prev) => {
         const next = [...prev];
         next[next.length - 1] = {
           role: "ai",
-          text: `Found ${data.records.length} account${data.records.length !== 1 ? "s" : ""} in "${segment.name}". Select which ones you'd like to create personalized pages for:`,
+          text: `Found ${data.records.length} account${data.records.length !== 1 ? "s" : ""} in "${data.segmentName}". Select which ones you'd like to create personalized pages for:`,
         };
         return next;
       });
@@ -172,35 +176,28 @@ export default function PrototypeView({
     }
   }
 
-  async function handleConfirm(selectedRecords: (Contact | Company)[]) {
+  async function handleConfirm(selectedRecords: (UiContact | UiCompany)[]) {
+    if (!selectedSegment) return;
     setIsModalOpen(false);
     const count = selectedRecords.length;
-    const releaseName = selectedSegment!.name;
+    const releaseName = selectedSegment.name;
 
     push({ role: "user", text: `Generate for ${count} account${count !== 1 ? "s" : ""}` });
     setGenState({ releaseName, total: count, fakeProgress: 0 });
     setStep("generating_recommendations");
 
     try {
-      const contacts = selectedRecords.map((r) => toGeneratePagesContact(r, recordType));
+      const uiContacts: UiContact[] =
+        recordType === "contact"
+          ? (selectedRecords as UiContact[])
+          : (selectedRecords as UiCompany[]).map(companyToSyntheticContact);
 
-      const payload: GeneratePagesPayload = {
-        version: "1.0",
-        generatedAt: new Date().toISOString(),
-        target: {
-          type: "prismic_document",
-          documentId: baselineDocumentId,
-          uid: null,
-          customType: "page",
-          lang: "en-us",
-        },
-        source: {
-          type: "hubspot_list",
-          listId: selectedSegment!.id,
-          listName: selectedSegment!.name,
-        },
-        contacts,
-      };
+      const payload = buildPayload(
+        uiContacts,
+        new Set(uiContacts.map((c) => c.id)),
+        synthesizePrismicDocumentMetadata(baselineDocumentId),
+        selectedSegment,
+      );
 
       const recsRes = await fetch(generatePagesEndpoint, {
         method: "POST",
@@ -342,41 +339,26 @@ export default function PrototypeView({
           )}
 
           {step === "idle" && (
-            <button
-              type="button"
-              onClick={handleActionClick}
-              className="self-start mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M10 4.5C10 3.12 11.12 2 12.5 2C13.42 2 14.22 2.5 14.67 3.25C15.08 3.1 15.53 3 16 3C18.21 3 20 4.79 20 7C20 7.14 19.99 7.28 19.97 7.41C21.17 7.9 22 9.08 22 10.5C22 12.43 20.43 14 18.5 14H6C4.07 14 2.5 12.43 2.5 10.5C2.5 8.96 3.5 7.65 4.9 7.18C4.65 6.68 4.5 6.11 4.5 5.5C4.5 3.57 6.07 2 8 2C8.86 2 9.64 2.32 10.23 2.85C10.08 3.39 10 3.94 10 4.5Z" fill="#009EDB" />
-              </svg>
-              Personalize page for a Salesforce segment
-            </button>
+            <div className="flex items-start gap-2 max-w-[300px]">
+              <AiAvatar />
+              <div className="bg-[#f4f2f8] text-foreground text-sm rounded-2xl rounded-tl-sm px-3 py-2.5 leading-relaxed flex flex-col gap-2">
+                <span>Which CRM would you like to pull your segment from?</span>
+                <div className="flex items-center gap-2">
+                  <CrmPill sourceId="hubspot" onClick={handleActionClick} />
+                  <CrmPill sourceId="salesforce" onClick={handleActionClick} />
+                </div>
+              </div>
+            </div>
           )}
 
-          {step === "segment_selecting" && (
+          {step === "segment_selecting" && activeSource && (
             <div className="w-full mt-1">
               <SegmentCombobox
-                sourceId="hubspot"
-                value={
-                  selectedSegment
-                    ? {
-                      id: selectedSegment.id,
-                      name: selectedSegment.name,
-                      objectType: selectedSegment.objectType,
-                      size: selectedSegment.size,
-                      sourceId: "hubspot",
-                    }
-                    : null
-                }
-                onSelect={(seg: Segment | null) => {
+                sourceId={activeSource}
+                value={selectedSegment}
+                onSelect={(seg) => {
                   if (!seg) return;
-                  void handleSegmentSelected({
-                    id: seg.id,
-                    name: seg.name,
-                    objectType: seg.objectType,
-                    size: seg.size,
-                  });
+                  void handleSegmentSelected(seg);
                 }}
               />
             </div>
@@ -459,6 +441,25 @@ export default function PrototypeView({
         />
       )}
     </div>
+  );
+}
+
+function CrmPill({
+  sourceId,
+  onClick,
+}: {
+  sourceId: ContactSourceId;
+  onClick: (sourceId: ContactSourceId) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(sourceId)}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-primary/20 bg-white text-foreground text-xs font-medium hover:bg-primary/5 hover:border-primary/40 transition-colors"
+    >
+      <CrmIcon sourceId={sourceId} className="w-3.5 h-3.5" />
+      {CRM_LABELS[sourceId]}
+    </button>
   );
 }
 

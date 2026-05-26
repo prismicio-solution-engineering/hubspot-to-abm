@@ -2,32 +2,38 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import type { HubSpotList, Contact, Company } from "@/lib/types";
+import type { Segment, UiCompany, UiContact } from "@/lib/types";
 
-function getRecordName(record: Contact | Company, type: "contact" | "company"): string {
+function getRecordName(
+  record: UiContact | UiCompany,
+  type: "contact" | "company",
+): string {
   if (type === "contact") {
-    const c = record as Contact;
-    const name = [c.firstname, c.lastname].filter(Boolean).join(" ");
+    const c = record as UiContact;
+    const name = [c.firstName, c.lastName].filter(Boolean).join(" ");
     return name || c.email || `Contact ${c.id}`;
   }
-  const co = record as Company;
+  const co = record as UiCompany;
   return co.name || co.domain || `Company ${co.id}`;
 }
 
-function getRecordSub(record: Contact | Company, type: "contact" | "company"): string {
+function getRecordSub(
+  record: UiContact | UiCompany,
+  type: "contact" | "company",
+): string {
   if (type === "contact") {
-    const c = record as Contact;
-    return c.associatedCompany?.name || c.company || c.jobtitle || "";
+    const c = record as UiContact;
+    return c.associatedCompany?.name || c.jobTitle || "";
   }
-  const co = record as Company;
+  const co = record as UiCompany;
   return co.industry || co.domain || "";
 }
 
 interface Props {
-  segment: HubSpotList;
-  records: (Contact | Company)[];
+  segment: Segment;
+  records: (UiContact | UiCompany)[];
   type: "contact" | "company";
-  onConfirm: (records: (Contact | Company)[]) => void;
+  onConfirm: (records: (UiContact | UiCompany)[]) => void;
   onClose: () => void;
 }
 
