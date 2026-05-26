@@ -1,28 +1,55 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Trash2, Send } from "lucide-react";
+import {
+  ChevronDown,
+  ExternalLink,
+  FileText,
+  MonitorPlay,
+  Search,
+  Send,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import SegmentCombobox from "@/components/SegmentCombobox";
 import AccountsModal from "./AccountsModal";
+import {
+  createDemoShowcase,
+  getDefaultDemoShowcase,
+  type DemoShowcase,
+} from "@/lib/demo-showcase";
+import { cn } from "@/lib/utils";
 import type {
   HubSpotList,
   Contact,
   Company,
+  ErrorResponse,
   RecordsResponse,
   GeneratePagesContact,
   GeneratePagesPayload,
   RecommendationResponse,
   PrismicGenerationResult,
+  PrismicDocumentMetadata,
 } from "@/lib/types";
-
-const BASELINE_DOCUMENT_ID = "ae9WThYAACoALXhJ";
 
 type Step =
   | "idle"
   | "segment_selecting"
   | "loading_contacts"
   | "accounts_modal"
+  | "release_naming"
   | "generating_recommendations"
   | "generating_pages"
   | "done";
@@ -45,6 +72,23 @@ interface GenState {
   total: number;
   fakeProgress: number;
 }
+
+interface DemoFormState {
+  id?: string;
+  name: string;
+  repository: string;
+  masterToken: string;
+  writeToken: string;
+  baselineDocumentId: string;
+  documentUid: string;
+  customType: string;
+  lang: string;
+  previewUrl: string;
+  canEmbedPreview: boolean;
+}
+
+const CUSTOM_DEMO_STORAGE_KEY = "abm_prototype_custom_demo_v1";
+const CUSTOM_DEMOS_STORAGE_KEY = "abm_prototype_custom_demos_v1";
 
 function toGeneratePagesContact(
   record: Contact | Company,
@@ -72,17 +116,108 @@ function toGeneratePagesContact(
   };
 }
 
+function demoToFormState(demo: DemoShowcase): DemoFormState {
+  return {
+    id: demo.id,
+    name: demo.name,
+    repository: demo.repository,
+    masterToken: demo.masterToken ?? "",
+    writeToken: demo.writeToken ?? "",
+    baselineDocumentId: demo.baselineDocumentId,
+    documentUid: demo.documentUid ?? "",
+    customType: demo.customType,
+    lang: demo.lang,
+    previewUrl: demo.previewUrl,
+    canEmbedPreview: demo.canEmbedPreview,
+  };
+}
+
+function createCustomDemoId(form: DemoFormState): string {
+  return [form.repository, form.documentUid || form.baselineDocumentId || form.name]
+    .join("-")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "custom-demo";
+}
+
+function normalizeSavedDemo(value: DemoShowcase): DemoShowcase {
+  return createDemoShowcase({
+    ...value,
+    id: value.id,
+    documentLabel: value.documentLabel,
+    releasePrefix: value.releasePrefix,
+    editedLabel: value.editedLabel,
+  });
+}
+
+function readStoredDemos(raw: string | null): DemoShowcase[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as DemoShowcase[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeSavedDemo);
+  } catch {
+    return [];
+  }
+}
+
+function loadSavedDemos(): DemoShowcase[] {
+  if (typeof window === "undefined") return [];
+  const demos = readStoredDemos(localStorage.getItem(CUSTOM_DEMOS_STORAGE_KEY));
+  if (demos.length > 0) return demos;
+
+  try {
+    const raw = localStorage.getItem(CUSTOM_DEMO_STORAGE_KEY);
+    if (!raw) return [];
+    const legacyDemo = createDemoShowcase(JSON.parse(raw) as DemoFormState);
+    localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify([legacyDemo]));
+    localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+    return [legacyDemo];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomDemo(
+  form: DemoFormState,
+  currentDemos: DemoShowcase[],
+): { demo: DemoShowcase; demos: DemoShowcase[] } {
+  const existingSavedDemo = form.id
+    ? currentDemos.some((demo) => demo.id === form.id)
+    : false;
+  const demo = createDemoShowcase({
+    ...form,
+    canEmbedPreview: true,
+    documentLabel: form.name,
+    releasePrefix: form.name,
+    id: existingSavedDemo && form.id ? form.id : createCustomDemoId(form),
+    editedLabel: "Custom demo",
+  });
+  const demos = [demo, ...currentDemos.filter((saved) => saved.id !== demo.id)];
+  localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify(demos));
+  localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+  return { demo, demos };
+}
+
 export default function PrototypeView() {
+  const [selectedDemo, setSelectedDemo] = useState<DemoShowcase>(
+    getDefaultDemoShowcase(),
+  );
+  const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
+  const [savedDemos, setSavedDemos] = useState<DemoShowcase[]>([]);
   const [step, setStep] = useState<Step>("idle");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "ai",
-      text: "Hi! I can help you create personalized variations of this page for your ABM campaigns. What would you like to do?",
+      text: `Hi! I'm connected to the ${getDefaultDemoShowcase().documentLabel} demo page. I can help you create personalized variations of this page for your ABM campaigns.`,
     },
   ]);
   const [selectedSegment, setSelectedSegment] = useState<HubSpotList | null>(null);
   const [records, setRecords] = useState<(Contact | Company)[]>([]);
   const [recordType, setRecordType] = useState<"contact" | "company">("contact");
+  const [pendingRecords, setPendingRecords] = useState<(Contact | Company)[]>([]);
+  const [releaseNameInput, setReleaseNameInput] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [genState, setGenState] = useState<GenState | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -90,6 +225,20 @@ export default function PrototypeView() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, step, genState]);
+
+  useEffect(() => {
+    const demos = loadSavedDemos();
+    if (demos.length === 0) return;
+    const saved = demos[0];
+    setSavedDemos(demos);
+    setSelectedDemo(saved);
+    setMessages([
+      {
+        role: "ai",
+        text: `Demo restored: ${saved.documentLabel}. I'm connected to this Prismic document and ready to run the ABM flow on it.`,
+      },
+    ]);
+  }, []);
 
   // Increment fake progress counter during page generation
   useEffect(() => {
@@ -107,8 +256,33 @@ export default function PrototypeView() {
     setMessages((prev) => [...prev, msg]);
   }
 
+  function handleDemoSelected(demo: DemoShowcase) {
+    setSelectedDemo(demo);
+    setStep("idle");
+    setSelectedSegment(null);
+    setRecords([]);
+    setPendingRecords([]);
+    setReleaseNameInput("");
+    setRecordType("contact");
+    setIsModalOpen(false);
+    setGenState(null);
+    setMessages([
+      {
+        role: "ai",
+        text: `Demo switched to ${demo.documentLabel}. I'm connected to this Prismic document and ready to run the ABM flow on it.`,
+      },
+    ]);
+  }
+
+  function handleDemoSaved(form: DemoFormState) {
+    const { demo, demos } = saveCustomDemo(form, savedDemos);
+    setSavedDemos(demos);
+    setIsDemoDialogOpen(false);
+    handleDemoSelected(demo);
+  }
+
   function handleActionClick() {
-    push({ role: "user", text: "Personalize for a HubSpot Segment" });
+    push({ role: "user", text: `Personalize ${selectedDemo.documentLabel}` });
     push({
       role: "ai",
       text: "Sure! Select the HubSpot segment you'd like to personalize this page for:",
@@ -118,7 +292,7 @@ export default function PrototypeView() {
 
   async function handleSegmentSelected(segment: HubSpotList) {
     setSelectedSegment(segment);
-    push({ role: "user", text: `${segment.name} · ${segment.size} records` });
+    push({ role: "user", text: segment.name });
     push({ role: "ai", text: `Loading accounts from "${segment.name}"…` });
     setStep("loading_contacts");
 
@@ -126,6 +300,7 @@ export default function PrototypeView() {
       const res = await fetch(`/api/segments/${segment.id}`);
       if (!res.ok) throw new Error("Failed");
       const data = (await res.json()) as RecordsResponse;
+      setSelectedSegment({ ...segment, size: data.records.length });
       setRecords(data.records);
       setRecordType(data.type);
       setMessages((prev) => {
@@ -151,12 +326,35 @@ export default function PrototypeView() {
     }
   }
 
-  async function handleConfirm(selectedRecords: (Contact | Company)[]) {
+  function handleConfirm(selectedRecords: (Contact | Company)[]) {
     setIsModalOpen(false);
     const count = selectedRecords.length;
-    const releaseName = `Martech Madrid - ${selectedSegment!.name}`;
+    const suggestedReleaseName = `${selectedDemo.name} - ${selectedSegment!.name}`;
 
     push({ role: "user", text: `Generate for ${count} account${count !== 1 ? "s" : ""}` });
+    push({
+      role: "ai",
+      text: "What should I call the Prismic release for these personalized pages?",
+    });
+    setPendingRecords(selectedRecords);
+    setReleaseNameInput(suggestedReleaseName);
+    setStep("release_naming");
+  }
+
+  async function handleReleaseNameSubmit(e: { preventDefault(): void }) {
+    e.preventDefault();
+    const releaseName = releaseNameInput.trim();
+    if (!releaseName || pendingRecords.length === 0) return;
+
+    push({ role: "user", text: releaseName });
+    await runGeneration(pendingRecords, releaseName);
+  }
+
+  async function runGeneration(
+    selectedRecords: (Contact | Company)[],
+    releaseName: string,
+  ) {
+    const count = selectedRecords.length;
     setGenState({ releaseName, total: count, fakeProgress: 0 });
     setStep("generating_recommendations");
 
@@ -166,12 +364,16 @@ export default function PrototypeView() {
       const payload: GeneratePagesPayload = {
         version: "1.0",
         generatedAt: new Date().toISOString(),
+        demoId: selectedDemo.id,
+        demoRepository: selectedDemo.repository,
+        demoMasterToken: selectedDemo.masterToken,
+        demoWriteToken: selectedDemo.writeToken,
         target: {
           type: "prismic_document",
-          documentId: BASELINE_DOCUMENT_ID,
-          uid: null,
-          customType: "page",
-          lang: "en-us",
+          documentId: selectedDemo.baselineDocumentId,
+          uid: selectedDemo.documentUid,
+          customType: selectedDemo.customType,
+          lang: selectedDemo.lang,
         },
         source: {
           type: "hubspot_list",
@@ -204,8 +406,12 @@ export default function PrototypeView() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          demoId: selectedDemo.id,
+          demoRepository: selectedDemo.repository,
+          demoMasterToken: selectedDemo.masterToken,
+          demoWriteToken: selectedDemo.writeToken,
           releaseName,
-          baselineDocumentID: BASELINE_DOCUMENT_ID,
+          baselineDocumentID: selectedDemo.baselineDocumentId,
           recommendationItems: recommendation.recommendationItems,
         }),
       });
@@ -236,6 +442,8 @@ export default function PrototypeView() {
     } finally {
       setStep("done");
       setGenState(null);
+      setPendingRecords([]);
+      setReleaseNameInput("");
     }
   }
 
@@ -326,7 +534,7 @@ export default function PrototypeView() {
               onClick={handleActionClick}
               className="self-start mt-1 flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
             >
-              <span>🎯</span>
+              <Sparkles className="w-3.5 h-3.5" />
               Personalize for a HubSpot Segment
             </button>
           )}
@@ -342,6 +550,24 @@ export default function PrototypeView() {
               <Spinner />
               Loading accounts…
             </div>
+          )}
+
+          {step === "release_naming" && (
+            <form
+              onSubmit={handleReleaseNameSubmit}
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
+            >
+              <Input
+                value={releaseNameInput}
+                onChange={(e) => setReleaseNameInput(e.target.value)}
+                className="h-8 flex-1"
+                placeholder="Release name"
+                autoFocus
+              />
+              <Button type="submit" size="sm" disabled={!releaseNameInput.trim()}>
+                Continue
+              </Button>
+            </form>
           )}
 
           <div ref={bottomRef} />
@@ -365,8 +591,10 @@ export default function PrototypeView() {
       {/* Right: page preview */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <div className="shrink-0 flex items-center gap-3 px-4 h-11 border-b border-border bg-white">
-          <span className="text-sm font-semibold text-foreground">Martech Madrid Blueprint</span>
-          <span className="text-xs text-muted-foreground">Edited 2 min. ago</span>
+          <span className="text-sm font-semibold text-foreground">
+            {selectedDemo.documentLabel}
+          </span>
+          <span className="text-xs text-muted-foreground">{selectedDemo.editedLabel}</span>
           <div className="h-4 w-px bg-border mx-1" />
           <div className="flex items-center text-xs">
             <button className="px-2 py-0.5 font-medium text-primary border-b border-primary">
@@ -378,17 +606,24 @@ export default function PrototypeView() {
           </div>
           <div className="flex items-center gap-1.5 bg-muted rounded px-2.5 py-1 text-xs text-muted-foreground max-w-xs ml-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-            https://example.prismic.io/home
+            <span className="truncate">
+              {selectedDemo.previewUrl || selectedDemo.repository}
+            </span>
           </div>
           <div className="ml-auto">
-            <button className="bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 rounded-md">
-              Publish
+            <button
+              type="button"
+              onClick={() => setIsDemoDialogOpen(true)}
+              className="flex items-center gap-1.5 bg-primary px-3 py-1.5 rounded-md font-medium text-primary-foreground text-xs hover:bg-primary/90 transition-colors"
+            >
+              <MonitorPlay className="w-3.5 h-3.5" />
+              Demo
             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <MockLandingPage />
+          <DemoPreview demo={selectedDemo} />
         </div>
       </div>
 
@@ -401,6 +636,539 @@ export default function PrototypeView() {
           onClose={handleModalClose}
         />
       )}
+      <DemoSetupDialog
+        open={isDemoDialogOpen}
+        initialDemo={selectedDemo}
+        savedDemos={savedDemos}
+        onOpenChange={setIsDemoDialogOpen}
+        onSave={handleDemoSaved}
+      />
+    </div>
+  );
+}
+
+function DemoSetupDialog({
+  open,
+  initialDemo,
+  savedDemos,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean;
+  initialDemo: DemoShowcase;
+  savedDemos: DemoShowcase[];
+  onOpenChange: (open: boolean) => void;
+  onSave: (form: DemoFormState) => void;
+}) {
+  const [form, setForm] = useState<DemoFormState>(() => demoToFormState(initialDemo));
+  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>([]);
+  const [documentQuery, setDocumentQuery] = useState("");
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const isValid =
+    form.name.trim().length > 0 &&
+    form.repository.trim().length > 0 &&
+    form.baselineDocumentId.trim().length > 0 &&
+    form.customType.trim().length > 0 &&
+    form.lang.trim().length > 0;
+
+  useEffect(() => {
+    if (open) setForm(demoToFormState(initialDemo));
+  }, [initialDemo, open]);
+
+  useEffect(() => {
+    if (!open || form.repository.trim().length === 0) return;
+
+    const controller = new AbortController();
+    setLoadingDocuments(true);
+    setDocumentError(null);
+
+    const timeout = window.setTimeout(() => {
+      fetch("/api/prismic/documents", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repository: form.repository.trim(),
+          masterToken: form.masterToken.trim() || undefined,
+          type: "all",
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = (await res.json().catch(() => ({}))) as ErrorResponse;
+            throw new Error(data.error ?? `Error ${res.status}`);
+          }
+          return res.json() as Promise<{ documents: PrismicDocumentMetadata[] }>;
+        })
+        .then(({ documents }) => {
+          setDocuments(documents);
+          setLoadingDocuments(false);
+        })
+        .catch((err: Error) => {
+          if (err.name === "AbortError") return;
+          setDocuments([]);
+          setDocumentError(err.message);
+          setLoadingDocuments(false);
+        });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [form.masterToken, form.repository, open]);
+
+  function update<K extends keyof DemoFormState>(key: K, value: DemoFormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function selectSavedDemo(demo: DemoShowcase) {
+    setForm(demoToFormState(demo));
+    setDocumentQuery("");
+    setDocumentError(null);
+  }
+
+  function previewUrlFromDocument(document: PrismicDocumentMetadata): string {
+    if (!document.url) return "";
+    if (/^https?:\/\//.test(document.url)) return document.url;
+    return "";
+  }
+
+  function selectDocument(document: PrismicDocumentMetadata) {
+    const label = document.metaTitle ?? document.uid ?? document.id;
+    const documentPreviewUrl = previewUrlFromDocument(document);
+    setForm((current) => ({
+      ...current,
+      id: document.id === current.baselineDocumentId ? current.id : undefined,
+      name: label,
+      baselineDocumentId: document.id,
+      documentUid: document.uid ?? "",
+      customType: document.type,
+      lang: document.lang,
+      previewUrl: documentPreviewUrl || current.previewUrl,
+      canEmbedPreview: true,
+    }));
+    setDocumentQuery("");
+  }
+
+  function submit(e: { preventDefault(): void }) {
+    e.preventDefault();
+    if (!isValid) return;
+    onSave(form);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl">
+        <form onSubmit={submit}>
+          <DialogHeader>
+            <DialogTitle>Configure demo</DialogTitle>
+            <DialogDescription>
+              Connect the prototype to a Prismic base document and optional page preview.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
+            <DemoField
+              label="Prismic repository"
+              value={form.repository}
+              onChange={(value) =>
+                setForm((current) => ({
+                  ...current,
+                  id: undefined,
+                  repository: value,
+                  baselineDocumentId: "",
+                  documentUid: "",
+                }))
+              }
+              placeholder="template-landing"
+            />
+            <SavedDemoPicker
+              demos={savedDemos}
+              selectedDemoId={form.id}
+              onSelect={selectSavedDemo}
+            />
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <DemoField
+              label="Master access token"
+              value={form.masterToken}
+              onChange={(value) => update("masterToken", value)}
+              placeholder="Uses PRISMIC_MASTER_TOKEN when empty"
+              type="password"
+            />
+            <DemoField
+              label="Write token"
+              value={form.writeToken}
+              onChange={(value) => update("writeToken", value)}
+              placeholder="Uses PRISMIC_WRITE_TOKEN when empty"
+              type="password"
+            />
+          </div>
+          <p className="mt-2 text-muted-foreground text-xs">
+            Leave tokens empty to use the server env vars. Enter them here only to override
+            the defaults for this demo session.
+          </p>
+
+          <div className="mt-4">
+            <DemoDocumentPicker
+              documents={documents}
+              query={documentQuery}
+              selectedDocumentId={form.baselineDocumentId}
+              loading={loadingDocuments}
+              error={documentError}
+              onQueryChange={setDocumentQuery}
+              onSelect={selectDocument}
+            />
+            {form.baselineDocumentId && (
+              <p className="mt-2 text-muted-foreground text-xs">
+                Selected `{form.baselineDocumentId}` · {form.customType} · {form.lang}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <Label>Published page URL</Label>
+            <Input
+              value={form.previewUrl}
+              onChange={(e) => update("previewUrl", e.target.value)}
+              placeholder="Auto-filled when Prismic provides a public URL"
+              className="mt-1.5"
+            />
+            <p className="mt-1.5 text-muted-foreground text-xs">
+              Leave empty to keep the default Martech preview. Add a public page URL to
+              load it in the right-side preview.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!isValid}>
+              Use demo
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DemoField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type?: "text" | "password";
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function SavedDemoPicker({
+  demos,
+  selectedDemoId,
+  onSelect,
+}: {
+  demos: DemoShowcase[];
+  selectedDemoId?: string;
+  onSelect: (demo: DemoShowcase) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedDemo = demos.find((demo) => demo.id === selectedDemoId);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function handleSelect(demo: DemoShowcase) {
+    onSelect(demo);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1.5">
+      <Label>Saved demos</Label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          disabled={demos.length === 0}
+          className={cn(
+            "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm transition-colors",
+            open
+              ? "border-ring ring-2 ring-ring ring-offset-1"
+              : "border-input hover:border-ring/50",
+            demos.length === 0 && "cursor-not-allowed opacity-60",
+          )}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        >
+          <span className="min-w-0 truncate text-left">
+            {selectedDemo
+              ? selectedDemo.name
+              : demos.length > 0
+                ? "Select saved demo"
+                : "No saved demos"}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+
+        {open && demos.length > 0 && (
+          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-border bg-card py-1 shadow-lg">
+            {demos.map((demo) => (
+              <button
+                key={demo.id}
+                type="button"
+                onClick={() => handleSelect(demo)}
+                className={cn(
+                  "flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                  selectedDemoId === demo.id && "bg-accent",
+                )}
+              >
+                <span className="truncate font-medium text-foreground">{demo.name}</span>
+                <span className="truncate text-muted-foreground text-xs">
+                  {demo.repository} · {demo.documentUid ?? demo.baselineDocumentId}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DemoDocumentPicker({
+  documents,
+  query,
+  selectedDocumentId,
+  loading,
+  error,
+  onQueryChange,
+  onSelect,
+}: {
+  documents: PrismicDocumentMetadata[];
+  query: string;
+  selectedDocumentId: string;
+  loading: boolean;
+  error: string | null;
+  onQueryChange: (value: string) => void;
+  onSelect: (document: PrismicDocumentMetadata) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selectedDocument = documents.find((doc) => doc.id === selectedDocumentId);
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? documents.filter((doc) =>
+        [
+          doc.metaTitle,
+          doc.uid,
+          doc.id,
+          doc.type,
+          doc.lang,
+        ].some((value) => value?.toLowerCase().includes(q)),
+      )
+    : documents;
+
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+      return;
+    }
+    onQueryChange("");
+  }, [onQueryChange, open]);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function handleSelect(document: PrismicDocumentMetadata) {
+    onSelect(document);
+    setOpen(false);
+  }
+
+  const displayValue = selectedDocument
+    ? (selectedDocument.metaTitle ?? selectedDocument.uid ?? selectedDocument.id)
+    : "";
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1.5">
+      <Label>Base page</Label>
+
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm transition-colors",
+            open
+              ? "border-ring ring-2 ring-ring ring-offset-1"
+              : "border-input hover:border-ring/50",
+          )}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        >
+          {selectedDocument ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="truncate font-medium text-foreground">{displayValue}</span>
+              <span className="shrink-0 text-muted-foreground text-xs">
+                {selectedDocument.type} · {selectedDocument.lang}
+              </span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              {loading
+                ? "Loading Prismic pages..."
+                : documents.length > 0
+                  ? `${documents.length} pages available...`
+                  : "No pages found"}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+
+        <div
+          className={cn(
+            "absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-lg",
+            !open && "hidden",
+          )}
+        >
+          <div className="border-border border-b px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                placeholder="Search Prismic pages..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto py-1">
+            {loading ? (
+              <p className="px-3 py-3 text-muted-foreground text-sm">Loading pages...</p>
+            ) : error ? (
+              <p className="px-3 py-3 text-destructive text-sm">{error}</p>
+            ) : filtered.length === 0 ? (
+              <p className="px-3 py-3 text-muted-foreground text-sm">
+                {query ? `No page for "${query}"` : "No pages found"}
+              </p>
+            ) : (
+              <ul role="listbox">
+                {filtered.map((doc) => (
+                  <li key={doc.id} role="option" aria-selected={selectedDocumentId === doc.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(doc)}
+                      className={cn(
+                        "flex w-full items-start gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                        selectedDocumentId === doc.id && "bg-accent",
+                      )}
+                    >
+                      <FileText
+                        className={cn(
+                          "mt-0.5 h-4 w-4 shrink-0",
+                          selectedDocumentId === doc.id
+                            ? "text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      />
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate font-medium text-foreground">
+                          {doc.metaTitle ?? doc.uid ?? doc.id}
+                        </span>
+                        <span className="truncate text-muted-foreground text-xs">
+                          {doc.uid ?? doc.id} · {doc.type} · {doc.lang}
+                          {doc.url ? ` · ${doc.url}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DemoPreview({ demo }: { demo: DemoShowcase }) {
+  if (!demo.previewUrl) return <MockLandingPage demo={demo} />;
+
+  return (
+    <div className="flex flex-col bg-white min-h-full">
+      <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-2 border-border border-b">
+        <div className="flex min-w-0 flex-col">
+          <span className="font-medium text-foreground text-xs">Base page preview</span>
+          <span className="text-muted-foreground text-xs truncate">{demo.previewUrl}</span>
+        </div>
+        <a
+          href={demo.previewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 bg-white hover:bg-muted px-2.5 py-1.5 border border-border rounded-md font-medium text-foreground text-xs transition-colors"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Open
+        </a>
+      </div>
+      <iframe
+        key={`${demo.id}:${demo.previewUrl}`}
+        src={demo.previewUrl}
+        title={`${demo.name} preview`}
+        className="flex-1 w-full min-h-[calc(100vh-88px)] bg-white"
+      />
     </div>
   );
 }
@@ -465,7 +1233,7 @@ function GenerationResultCard({ result }: { result: GenerationResult }) {
   );
 }
 
-function MockLandingPage() {
+function MockLandingPage({ demo }: { demo: DemoShowcase }) {
   return (
     <div
       className="min-h-full bg-white"
@@ -491,7 +1259,7 @@ function MockLandingPage() {
           ABM Event Personalization
         </p>
         <h1 className="text-5xl font-bold text-gray-900 leading-tight max-w-3xl mb-6">
-          Meet us at Martech Madrid
+          {demo.documentLabel}
         </h1>
         <p className="text-lg text-gray-400 max-w-xl mb-10 leading-relaxed">
           Prismic enables marketing teams to generate, customize, and publish

@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
+import { getPrismicWriteConfigForDemo } from "@/lib/demo-showcase-server";
 import type { PrismicGenerationResult, RecommendationItem } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 interface GenerateAbmPagesRequest {
+  demoId?: string;
+  demoRepository?: string;
+  demoMasterToken?: string;
+  demoWriteToken?: string;
   releaseName: string;
   baselineDocumentID: string;
   recommendationItems: RecommendationItem[];
@@ -15,16 +20,6 @@ interface PrismicReleaseResponse {
   Id?: string;
   label?: string;
   Label?: string;
-}
-
-function getConfig() {
-  const repository = process.env.PRISMIC_REPOSITORY;
-  const token = process.env.PRISMIC_WRITE_TOKEN;
-
-  if (!repository) throw new Error("PRISMIC_REPOSITORY is not set");
-  if (!token) throw new Error("PRISMIC_WRITE_TOKEN is not set");
-
-  return { repository, token };
 }
 
 function isRecommendationItem(value: unknown): value is RecommendationItem {
@@ -48,6 +43,10 @@ function isRequest(value: unknown): value is GenerateAbmPagesRequest {
     body.releaseName.trim().length > 0 &&
     typeof body.baselineDocumentID === "string" &&
     body.baselineDocumentID.trim().length > 0 &&
+    (body.demoId === undefined || typeof body.demoId === "string") &&
+    (body.demoRepository === undefined || typeof body.demoRepository === "string") &&
+    (body.demoMasterToken === undefined || typeof body.demoMasterToken === "string") &&
+    (body.demoWriteToken === undefined || typeof body.demoWriteToken === "string") &&
     Array.isArray(body.recommendationItems) &&
     body.recommendationItems.every(isRecommendationItem)
   );
@@ -175,7 +174,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { repository, token } = getConfig();
+    const { repository, writeToken: token } = getPrismicWriteConfigForDemo(
+      body.demoId,
+      body.demoRepository,
+      body.demoMasterToken,
+      body.demoWriteToken,
+    );
     const release = await createRelease(repository, token, body.releaseName.trim());
 
     const items: PrismicGenerationResult["items"] = [];

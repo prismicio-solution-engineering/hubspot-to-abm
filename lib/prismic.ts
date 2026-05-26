@@ -34,9 +34,14 @@ interface SearchResponse {
   results: RawPrismicDocument[];
 }
 
-function getConfig() {
-  const repository = process.env.PRISMIC_REPOSITORY;
-  const token = process.env.PRISMIC_MASTER_TOKEN;
+export interface PrismicReadConfig {
+  repository: string;
+  masterToken: string;
+}
+
+function getConfig(config?: PrismicReadConfig) {
+  const repository = config?.repository ?? process.env.PRISMIC_REPOSITORY;
+  const token = config?.masterToken ?? process.env.PRISMIC_MASTER_TOKEN;
 
   if (!repository) {
     throw new PrismicError(500, "PRISMIC_REPOSITORY is not set");
@@ -70,8 +75,8 @@ async function prismicFetch<T>(url: URL): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function getMasterRef(): Promise<string> {
-  const { apiEndpoint, token } = getConfig();
+async function getMasterRef(config?: PrismicReadConfig): Promise<string> {
+  const { apiEndpoint, token } = getConfig(config);
   const url = new URL(apiEndpoint);
   url.searchParams.set("access_token", token);
 
@@ -109,11 +114,38 @@ function toPrismicDocument(doc: RawPrismicDocument): PrismicDocument {
 
 export { PrismicError };
 
+export async function getPrismicDocuments(
+  config?: PrismicReadConfig,
+): Promise<PrismicDocumentMetadata[]> {
+  const { searchEndpoint, token } = getConfig(config);
+  const ref = await getMasterRef(config);
+
+  const all: PrismicDocumentMetadata[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const url = new URL(searchEndpoint);
+    url.searchParams.set("ref", ref);
+    url.searchParams.set("access_token", token);
+    url.searchParams.set("pageSize", "100");
+    url.searchParams.set("page", String(page));
+
+    const data = await prismicFetch<SearchResponse & { total_pages: number }>(url);
+    all.push(...data.results.map(toPrismicDocumentMetadata));
+    totalPages = data.total_pages ?? 1;
+    page++;
+  }
+
+  return all;
+}
+
 export async function getPrismicDocumentsByType(
   type: string,
+  config?: PrismicReadConfig,
 ): Promise<PrismicDocumentMetadata[]> {
-  const { searchEndpoint, token } = getConfig();
-  const ref = await getMasterRef();
+  const { searchEndpoint, token } = getConfig(config);
+  const ref = await getMasterRef(config);
 
   const all: PrismicDocumentMetadata[] = [];
   let page = 1;
@@ -136,9 +168,12 @@ export async function getPrismicDocumentsByType(
   return all;
 }
 
-export async function getPrismicDocument(documentId: string): Promise<PrismicDocument> {
-  const { searchEndpoint, token } = getConfig();
-  const ref = await getMasterRef();
+export async function getPrismicDocument(
+  documentId: string,
+  config?: PrismicReadConfig,
+): Promise<PrismicDocument> {
+  const { searchEndpoint, token } = getConfig(config);
+  const ref = await getMasterRef(config);
   const url = new URL(searchEndpoint);
 
   url.searchParams.set("ref", ref);
@@ -157,8 +192,9 @@ export async function getPrismicDocument(documentId: string): Promise<PrismicDoc
 
 export async function getPrismicDocumentMetadata(
   documentId: string,
+  config?: PrismicReadConfig,
 ): Promise<PrismicDocumentMetadata> {
-  const document = await getPrismicDocument(documentId);
+  const document = await getPrismicDocument(documentId, config);
   return {
     id: document.id,
     uid: document.uid,
