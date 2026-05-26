@@ -3,107 +3,134 @@
   "done": true,
   "records": [
     {
-      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdaIAA" },
+      "attributes": {
+        "type": "CampaignMember",
+        "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdaIAA"
+      },
       "ContactId": "003Wx00000AZefgIAT",
       "Status": "Sent",
       "Contact": {
-        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZefgIAT" },
+        "attributes": {
+          "type": "Contact",
+          "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZefgIAT"
+        },
         "Id": "003Wx00000AZefgIAT",
-        "FirstName": "Klaus",
-        "LastName": "Hoffmann",
-        "Email": "klaus.hoffmann@steinwerk-industries.de",
-        "Phone": "+49 30 1234 5670",
-        "Title": "Chief Marketing Officer",
+        "FirstName": "Sacha",
+        "LastName": "Gauthier",
+        "Email": "sacha.gauthier@paddle.com",
+        "Phone": "+44 75 4000 0710",
+        "Title": "Manager of Demand Generation, Growth",
         "Department": "Marketing",
         "LeadSource": "Partner Referral",
-        "MailingCity": "Berlin",
-        "MailingCountry": "Germany",
+        "MailingCity": "London",
+        "MailingCountry": "England",
         "AccountId": "001Wx00000IYNFdIAP",
         "Persona__c": "C-Level Executive",
         "Account": {
-          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP" },
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP"
+          },
           "Id": "001Wx00000IYNFdIAP",
-          "Name": "Steinwerk Industries GmbH",
-          "Website": "https://www.steinwerk-industries.de",
-          "Industry": "Industrial Manufacturing",
-          "NumberOfEmployees": 12500,
-          "AnnualRevenue": 980000000,
-          "BillingCity": "Berlin",
-          "BillingCountry": "Germany",
-          "Phone": "+49 30 1234 5600",
+          "Name": "Paddle",
+          "Website": "https://paddle.com",
+          "Industry": "Information Technology Services",
+          "NumberOfEmployees": 500,
+          "AnnualRevenue": 100000000,
+          "BillingCity": "London",
+          "BillingCountry": "England",
+          "Phone": "+44 15 3656 0225",
           "Type": "Prospect",
-          "Description": "Family-owned industrial manufacturer of precision components for automotive and aerospace",
-          "ABM_Tier__c": "Tier 1"
+          "Description": "Lead end-to-end demand generation strategy driving pipeline growth for Paddle's B2B SaaS payments platform - Manage a growth marketing team spanning analytics, paid media, and SEO - Own multi-channel programs across ABM, Paid Media, Lifecycle, SEO, and Web to acquire and progress high-value accounts - Design audience frameworks and intent-based targeting to prioritise enterprise and mid-market opportunities - Launch integrated campaigns (paid social, search, content, webinars, lifecycle) to accelerate deal creation and velocity - Partner with Sales and Revenue Ops to optimise MQL routing, scoring, and conversion processes - Build scalable automation using Salesforce, HubSpot, Influ2, and enrichment tools, reducing manual lead handling by ~40% - Improve funnel efficiency through signal-based targeting, lowering cost per qualified opportunity by 18%",
+          "ABM_Tier__c": "Tier 2"
         }
       }
     },
     {
-      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdbIAA" },
+      "attributes": {
+        "type": "CampaignMember",
+        "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdbIAA"
+      },
       "ContactId": "003Wx00000AZfhiIAT",
       "Status": "Sent",
       "Contact": {
-        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZfhiIAT" },
+        "attributes": {
+          "type": "Contact",
+          "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZfhiIAT"
+        },
         "Id": "003Wx00000AZfhiIAT",
-        "FirstName": "Annika",
-        "LastName": "Becker",
-        "Email": "annika.becker@steinwerk-industries.de",
-        "Phone": "+49 30 1234 5671",
-        "Title": "VP Digital Marketing",
+        "FirstName": "Andrew",
+        "LastName": "Hall",
+        "Email": "ahall@canto.com",
+        "Phone": "+44 74 9567 9203",
+        "Title": "VP Global Demand Generation",
         "Department": "Marketing",
         "LeadSource": "Web",
-        "MailingCity": "Berlin",
-        "MailingCountry": "Germany",
+        "MailingCity": "London",
+        "MailingCountry": "England",
         "AccountId": "001Wx00000IYNFdIAP",
         "Persona__c": "Marketing Decision Maker",
         "Account": {
-          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP" },
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNFdIAP"
+          },
           "Id": "001Wx00000IYNFdIAP",
-          "Name": "Steinwerk Industries GmbH",
-          "Website": "https://www.steinwerk-industries.de",
-          "Industry": "Industrial Manufacturing",
-          "NumberOfEmployees": 12500,
-          "AnnualRevenue": 980000000,
-          "BillingCity": "Berlin",
-          "BillingCountry": "Germany",
-          "Phone": "+49 30 1234 5600",
+          "Name": "Canto",
+          "Website": "https://canto.com",
+          "Industry": "Information Technology Services",
+          "NumberOfEmployees": 500,
+          "AnnualRevenue": 50000000,
+          "BillingCity": "Atlanta",
+          "BillingCountry": "United States",
+          "Phone": "+1 415-495-6545",
           "Type": "Prospect",
-          "Description": "Family-owned industrial manufacturer of precision components for automotive and aerospace",
-          "ABM_Tier__c": "Tier 1"
+          "Description": "Canto is the top provider of digital asset management solutions, empowering organizations to efficiently manage and share digital assets globally.",
+          "ABM_Tier__c": "Tier 2"
         }
       }
     },
     {
-      "attributes": { "type": "CampaignMember", "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdcIAA" },
+      "attributes": {
+        "type": "CampaignMember",
+        "url": "/services/data/v66.0/sobjects/CampaignMember/00vWx000003cxdcIAA"
+      },
       "ContactId": "003Wx00000AZgijIAT",
       "Status": "Sent",
       "Contact": {
-        "attributes": { "type": "Contact", "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZgijIAT" },
+        "attributes": {
+          "type": "Contact",
+          "url": "/services/data/v66.0/sobjects/Contact/003Wx00000AZgijIAT"
+        },
         "Id": "003Wx00000AZgijIAT",
-        "FirstName": "Matthias",
-        "LastName": "Wagner",
-        "Email": "matthias.wagner@alpinetech.ch",
-        "Phone": "+41 44 567 89 01",
-        "Title": "Head of Marketing & Communications",
+        "FirstName": "Andrea",
+        "LastName": "Piras",
+        "Email": "andrea.piras@ecologi.com",
+        "Phone": "+44 77 7857 2495",
+        "Title": "Senior Demand Generation Manager",
         "Department": "Marketing",
         "LeadSource": "Cold Outreach",
-        "MailingCity": "Zürich",
-        "MailingCountry": "Switzerland",
+        "MailingCity": "London",
+        "MailingCountry": "England",
         "AccountId": "001Wx00000IYNGeIAP",
         "Persona__c": "Marketing Decision Maker",
         "Account": {
-          "attributes": { "type": "Account", "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNGeIAP" },
+          "attributes": {
+            "type": "Account",
+            "url": "/services/data/v66.0/sobjects/Account/001Wx00000IYNGeIAP"
+          },
           "Id": "001Wx00000IYNGeIAP",
-          "Name": "AlpineTech AG",
-          "Website": "https://www.alpinetech.ch",
+          "Name": "Ecologi | B Corp",
+          "Website": "https://ecologi.com",
           "Industry": "Information Technology Services",
-          "NumberOfEmployees": 3400,
-          "AnnualRevenue": 410000000,
-          "BillingCity": "Zürich",
-          "BillingCountry": "Switzerland",
-          "Phone": "+41 44 567 00 00",
+          "NumberOfEmployees": 250,
+          "AnnualRevenue": 11481000,
+          "BillingCity": "Bristol",
+          "BillingCountry": "England",
+          "Phone": "+44 77 7857 2495",
           "Type": "Prospect",
-          "Description": "Swiss IT services provider serving enterprise customers in finance and insurance",
-          "ABM_Tier__c": "Tier 1"
+          "Description": "At Ecologi, I design and execute full-funnel demand generation strategies to scale climate tech adoption. I lead on paid media, ABM, CRM automation, and content-led acquisition, building predictable, data-driven growth across channels.",
+          "ABM_Tier__c": "Tier 3"
         }
       }
     }
