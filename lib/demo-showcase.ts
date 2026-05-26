@@ -13,9 +13,14 @@ export interface DemoShowcase {
   editedLabel: string;
 }
 
-export type DemoShowcaseFormInput = Omit<DemoShowcase, "id" | "editedLabel"> & {
+export type DemoShowcaseFormInput = Omit<
+  DemoShowcase,
+  "id" | "editedLabel" | "documentLabel" | "releasePrefix"
+> & {
   id?: string;
   editedLabel?: string;
+  documentLabel?: string;
+  releasePrefix?: string;
 };
 
 export const DEMO_SHOWCASES: DemoShowcase[] = [
@@ -62,7 +67,7 @@ export function createDemoShowcase(input: DemoShowcaseFormInput): DemoShowcase {
   return {
     id: id || "custom-demo",
     name: input.name.trim(),
-    documentLabel: input.documentLabel.trim(),
+    documentLabel: (input.documentLabel ?? input.name).trim(),
     repository: input.repository.trim(),
     baselineDocumentId: input.baselineDocumentId.trim(),
     documentUid: input.documentUid?.trim() || null,
@@ -70,7 +75,7 @@ export function createDemoShowcase(input: DemoShowcaseFormInput): DemoShowcase {
     lang: input.lang.trim(),
     previewUrl: input.previewUrl.trim(),
     canEmbedPreview: input.canEmbedPreview,
-    releasePrefix: input.releasePrefix.trim(),
+    releasePrefix: (input.releasePrefix ?? input.name).trim(),
     editedLabel: input.editedLabel?.trim() || "Custom demo",
   };
 }

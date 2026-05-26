@@ -1,20 +1,30 @@
 import { NextResponse } from "next/server";
 
-import { getPrismicDocumentsByType, PrismicError } from "@/lib/prismic";
+import { getPrismicReadConfigForDemo } from "@/lib/demo-showcase-server";
+import {
+  getPrismicDocuments,
+  getPrismicDocumentsByType,
+  PrismicError,
+} from "@/lib/prismic";
 
 export const runtime = "nodejs";
-export const revalidate = 60;
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const type = (searchParams.get("type") ?? "").trim();
-
-  if (!type) {
-    return NextResponse.json({ error: "Missing ?type= parameter." }, { status: 400 });
-  }
+  const type = (searchParams.get("type") ?? "all").trim();
+  const repository = (searchParams.get("repository") ?? "").trim();
 
   try {
-    const documents = await getPrismicDocumentsByType(type);
+    const prismicConfig = getPrismicReadConfigForDemo(null, repository);
+    const config = {
+      repository: prismicConfig.repository,
+      masterToken: prismicConfig.masterToken,
+    };
+    const documents =
+      type === "all"
+        ? await getPrismicDocuments(config)
+        : await getPrismicDocumentsByType(type, config);
     return NextResponse.json({ documents });
   } catch (err) {
     if (err instanceof PrismicError) {

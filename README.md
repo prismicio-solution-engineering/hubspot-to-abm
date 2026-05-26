@@ -134,14 +134,13 @@ Le champ `version: "1.0"` permet de faire évoluer le format sans casser les con
 
 ## Prototype demo showcase
 
-La page `/prototype` peut afficher une page de demo Prismic à droite du chat IA. Le bouton **Demo** permet de choisir une configuration depuis `lib/demo-showcase.ts` ou d'ouvrir **Configure demo** pour saisir les infos directement dans l'app.
+La page `/prototype` peut afficher une page de demo Prismic à droite du chat IA. Le bouton **Demo** permet de choisir une configuration depuis `lib/demo-showcase.ts` ou d'ouvrir **Configure demo** pour sélectionner une page Prismic directement dans l'app.
 
 Chaque demo définit :
 
-- le repository Prismic public à afficher ;
+- le repository Prismic à interroger ;
 - le document Prismic de base utilisé par l'agent ABM ;
-- l'URL de preview chargée dans le panneau de droite ;
-- le préfixe de release utilisé lors de la génération.
+- l'URL de preview chargée dans le panneau de droite, si Prismic la fournit.
 
 Les secrets Prismic restent côté serveur. Pour une demo `martech-madrid`, l'app utilise d'abord les variables suivantes si elles existent, puis retombe sur les variables Prismic globales :
 
@@ -151,9 +150,9 @@ PRISMIC_MARTECH_MADRID_MASTER_TOKEN=MC5...
 PRISMIC_MARTECH_MADRID_WRITE_TOKEN=...
 ```
 
-Le client envoie seulement `demoId`; les endpoints `/api/generate-pages` et `/api/prismic/generate-abm-pages` résolvent le repository et les tokens côté serveur.
+Le client envoie seulement `demoId`, `demoRepository` et le document sélectionné ; les endpoints `/api/generate-pages` et `/api/prismic/generate-abm-pages` résolvent les tokens côté serveur.
 
-La configuration saisie dans l'app est stockée dans le `localStorage` du navigateur et ne contient pas de secrets. Les tokens restent fournis par `.env.local`.
+La configuration saisie dans l'app est stockée dans le `localStorage` du navigateur et ne contient pas de secrets. Les tokens restent fournis par `.env.local`. Le nom de release est demandé dans le chat après la sélection des comptes.
 
 ## Architecture du flow par étapes
 

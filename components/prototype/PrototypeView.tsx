@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from "react";
 import {
   ChevronDown,
   ExternalLink,
+  FileText,
   MonitorPlay,
+  Search,
   Send,
   Sparkles,
   Trash2,
@@ -29,15 +31,18 @@ import {
   getDefaultDemoShowcase,
   type DemoShowcase,
 } from "@/lib/demo-showcase";
+import { cn } from "@/lib/utils";
 import type {
   HubSpotList,
   Contact,
   Company,
+  ErrorResponse,
   RecordsResponse,
   GeneratePagesContact,
   GeneratePagesPayload,
   RecommendationResponse,
   PrismicGenerationResult,
+  PrismicDocumentMetadata,
 } from "@/lib/types";
 
 type Step =
@@ -45,6 +50,7 @@ type Step =
   | "segment_selecting"
   | "loading_contacts"
   | "accounts_modal"
+  | "release_naming"
   | "generating_recommendations"
   | "generating_pages"
   | "done";
@@ -70,7 +76,6 @@ interface GenState {
 
 interface DemoFormState {
   name: string;
-  documentLabel: string;
   repository: string;
   baselineDocumentId: string;
   documentUid: string;
@@ -78,7 +83,6 @@ interface DemoFormState {
   lang: string;
   previewUrl: string;
   canEmbedPreview: boolean;
-  releasePrefix: string;
 }
 
 const CUSTOM_DEMO_STORAGE_KEY = "abm_prototype_custom_demo_v1";
@@ -112,7 +116,6 @@ function toGeneratePagesContact(
 function demoToFormState(demo: DemoShowcase): DemoFormState {
   return {
     name: demo.name,
-    documentLabel: demo.documentLabel,
     repository: demo.repository,
     baselineDocumentId: demo.baselineDocumentId,
     documentUid: demo.documentUid ?? "",
@@ -120,7 +123,6 @@ function demoToFormState(demo: DemoShowcase): DemoFormState {
     lang: demo.lang,
     previewUrl: demo.previewUrl,
     canEmbedPreview: demo.canEmbedPreview,
-    releasePrefix: demo.releasePrefix,
   };
 }
 
@@ -140,6 +142,8 @@ function saveCustomDemo(form: DemoFormState): DemoShowcase {
   const demo = createDemoShowcase({
     ...form,
     canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview,
+    documentLabel: form.name,
+    releasePrefix: form.name,
     id: "custom-demo",
     editedLabel: "Custom demo",
   });
@@ -176,6 +180,8 @@ export default function PrototypeView() {
   const [selectedSegment, setSelectedSegment] = useState<HubSpotList | null>(null);
   const [records, setRecords] = useState<(Contact | Company)[]>([]);
   const [recordType, setRecordType] = useState<"contact" | "company">("contact");
+  const [pendingRecords, setPendingRecords] = useState<(Contact | Company)[]>([]);
+  const [releaseNameInput, setReleaseNameInput] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [genState, setGenState] = useState<GenState | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -219,6 +225,8 @@ export default function PrototypeView() {
     setStep("idle");
     setSelectedSegment(null);
     setRecords([]);
+    setPendingRecords([]);
+    setReleaseNameInput("");
     setRecordType("contact");
     setIsModalOpen(false);
     setGenState(null);
@@ -282,12 +290,35 @@ export default function PrototypeView() {
     }
   }
 
-  async function handleConfirm(selectedRecords: (Contact | Company)[]) {
+  function handleConfirm(selectedRecords: (Contact | Company)[]) {
     setIsModalOpen(false);
     const count = selectedRecords.length;
-    const releaseName = `${selectedDemo.releasePrefix} - ${selectedSegment!.name}`;
+    const suggestedReleaseName = `${selectedDemo.name} - ${selectedSegment!.name}`;
 
     push({ role: "user", text: `Generate for ${count} account${count !== 1 ? "s" : ""}` });
+    push({
+      role: "ai",
+      text: "What should I call the Prismic release for these personalized pages?",
+    });
+    setPendingRecords(selectedRecords);
+    setReleaseNameInput(suggestedReleaseName);
+    setStep("release_naming");
+  }
+
+  async function handleReleaseNameSubmit(e: { preventDefault(): void }) {
+    e.preventDefault();
+    const releaseName = releaseNameInput.trim();
+    if (!releaseName || pendingRecords.length === 0) return;
+
+    push({ role: "user", text: releaseName });
+    await runGeneration(pendingRecords, releaseName);
+  }
+
+  async function runGeneration(
+    selectedRecords: (Contact | Company)[],
+    releaseName: string,
+  ) {
+    const count = selectedRecords.length;
     setGenState({ releaseName, total: count, fakeProgress: 0 });
     setStep("generating_recommendations");
 
@@ -371,6 +402,8 @@ export default function PrototypeView() {
     } finally {
       setStep("done");
       setGenState(null);
+      setPendingRecords([]);
+      setReleaseNameInput("");
     }
   }
 
@@ -477,6 +510,24 @@ export default function PrototypeView() {
               <Spinner />
               Loading accounts…
             </div>
+          )}
+
+          {step === "release_naming" && (
+            <form
+              onSubmit={handleReleaseNameSubmit}
+              className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2"
+            >
+              <Input
+                value={releaseNameInput}
+                onChange={(e) => setReleaseNameInput(e.target.value)}
+                className="h-8 flex-1"
+                placeholder="Release name"
+                autoFocus
+              />
+              <Button type="submit" size="sm" disabled={!releaseNameInput.trim()}>
+                Continue
+              </Button>
+            </form>
           )}
 
           <div ref={bottomRef} />
@@ -632,22 +683,81 @@ function DemoSetupDialog({
   onSave: (form: DemoFormState) => void;
 }) {
   const [form, setForm] = useState<DemoFormState>(() => demoToFormState(initialDemo));
+  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>([]);
+  const [documentQuery, setDocumentQuery] = useState("");
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
   const isValid =
     form.name.trim().length > 0 &&
-    form.documentLabel.trim().length > 0 &&
     form.repository.trim().length > 0 &&
     form.baselineDocumentId.trim().length > 0 &&
     form.customType.trim().length > 0 &&
-    form.lang.trim().length > 0 &&
-    form.releasePrefix.trim().length > 0;
+    form.lang.trim().length > 0;
   const previewIsBuilderUrl = isPrismicBuilderUrl(form.previewUrl);
 
   useEffect(() => {
     if (open) setForm(demoToFormState(initialDemo));
   }, [initialDemo, open]);
 
+  useEffect(() => {
+    if (!open || form.repository.trim().length === 0) return;
+
+    const controller = new AbortController();
+    setLoadingDocuments(true);
+    setDocumentError(null);
+
+    const params = new URLSearchParams({
+      repository: form.repository.trim(),
+      type: "all",
+    });
+
+    fetch(`/api/prismic/documents?${params.toString()}`, {
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as ErrorResponse;
+          throw new Error(data.error ?? `Error ${res.status}`);
+        }
+        return res.json() as Promise<{ documents: PrismicDocumentMetadata[] }>;
+      })
+      .then(({ documents }) => {
+        setDocuments(documents);
+        setLoadingDocuments(false);
+      })
+      .catch((err: Error) => {
+        if (err.name === "AbortError") return;
+        setDocuments([]);
+        setDocumentError(err.message);
+        setLoadingDocuments(false);
+      });
+
+    return () => controller.abort();
+  }, [form.repository, open]);
+
   function update<K extends keyof DemoFormState>(key: K, value: DemoFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function previewUrlFromDocument(document: PrismicDocumentMetadata): string {
+    if (!document.url) return "";
+    if (/^https?:\/\//.test(document.url)) return document.url;
+    return "";
+  }
+
+  function selectDocument(document: PrismicDocumentMetadata) {
+    const label = document.metaTitle ?? document.uid ?? document.id;
+    setForm((current) => ({
+      ...current,
+      name: label,
+      baselineDocumentId: document.id,
+      documentUid: document.uid ?? "",
+      customType: document.type,
+      lang: document.lang,
+      previewUrl: previewUrlFromDocument(document),
+      canEmbedPreview: Boolean(previewUrlFromDocument(document)),
+    }));
+    setDocumentQuery("");
   }
 
   function submit(e: { preventDefault(): void }) {
@@ -675,55 +785,45 @@ function DemoSetupDialog({
               placeholder="Martech Madrid"
             />
             <DemoField
-              label="Release prefix"
-              value={form.releasePrefix}
-              onChange={(value) => update("releasePrefix", value)}
-              placeholder="Martech Madrid"
-            />
-            <DemoField
-              label="Document label"
-              value={form.documentLabel}
-              onChange={(value) => update("documentLabel", value)}
-              placeholder="Martech Madrid Blueprint"
-            />
-            <DemoField
               label="Prismic repository"
               value={form.repository}
-              onChange={(value) => update("repository", value)}
+              onChange={(value) =>
+                setForm((current) => ({
+                  ...current,
+                  repository: value,
+                  baselineDocumentId: "",
+                  documentUid: "",
+                  previewUrl: "",
+                }))
+              }
               placeholder="template-landing"
-            />
-            <DemoField
-              label="Prismic document ID"
-              value={form.baselineDocumentId}
-              onChange={(value) => update("baselineDocumentId", value)}
-              placeholder="ae9WThYAACoALXhJ"
-            />
-            <DemoField
-              label="Document UID"
-              value={form.documentUid}
-              onChange={(value) => update("documentUid", value)}
-              placeholder="landing-page"
-            />
-            <DemoField
-              label="Custom type"
-              value={form.customType}
-              onChange={(value) => update("customType", value)}
-              placeholder="page"
-            />
-            <DemoField
-              label="Language"
-              value={form.lang}
-              onChange={(value) => update("lang", value)}
-              placeholder="en-us"
             />
           </div>
 
           <div className="mt-4">
-            <DemoField
-              label="Published page URL"
+            <DemoDocumentPicker
+              documents={documents}
+              query={documentQuery}
+              selectedDocumentId={form.baselineDocumentId}
+              loading={loadingDocuments}
+              error={documentError}
+              onQueryChange={setDocumentQuery}
+              onSelect={selectDocument}
+            />
+            {form.baselineDocumentId && (
+              <p className="mt-2 text-muted-foreground text-xs">
+                Selected `{form.baselineDocumentId}` · {form.customType} · {form.lang}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4">
+            <Label>Published page URL</Label>
+            <Input
               value={form.previewUrl}
-              onChange={(value) => update("previewUrl", value)}
-              placeholder="https://your-public-site.com/demo-page"
+              onChange={(e) => update("previewUrl", e.target.value)}
+              placeholder="Auto-filled when Prismic provides a public URL"
+              className="mt-1.5"
             />
             <p className="mt-1.5 text-muted-foreground text-xs">
               Use the public page URL for the right-side preview. Prismic Builder URLs open
@@ -784,6 +884,179 @@ function DemoField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
+    </div>
+  );
+}
+
+function DemoDocumentPicker({
+  documents,
+  query,
+  selectedDocumentId,
+  loading,
+  error,
+  onQueryChange,
+  onSelect,
+}: {
+  documents: PrismicDocumentMetadata[];
+  query: string;
+  selectedDocumentId: string;
+  loading: boolean;
+  error: string | null;
+  onQueryChange: (value: string) => void;
+  onSelect: (document: PrismicDocumentMetadata) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const selectedDocument = documents.find((doc) => doc.id === selectedDocumentId);
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? documents.filter((doc) =>
+        [
+          doc.metaTitle,
+          doc.uid,
+          doc.id,
+          doc.type,
+          doc.lang,
+        ].some((value) => value?.toLowerCase().includes(q)),
+      )
+    : documents;
+
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+      return;
+    }
+    onQueryChange("");
+  }, [onQueryChange, open]);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function handleSelect(document: PrismicDocumentMetadata) {
+    onSelect(document);
+    setOpen(false);
+  }
+
+  const displayValue = selectedDocument
+    ? (selectedDocument.metaTitle ?? selectedDocument.uid ?? selectedDocument.id)
+    : "";
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1.5">
+      <Label>Base page</Label>
+
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className={cn(
+            "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm transition-colors",
+            open
+              ? "border-ring ring-2 ring-ring ring-offset-1"
+              : "border-input hover:border-ring/50",
+          )}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+        >
+          {selectedDocument ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="truncate font-medium text-foreground">{displayValue}</span>
+              <span className="shrink-0 text-muted-foreground text-xs">
+                {selectedDocument.type} · {selectedDocument.lang}
+              </span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              {loading
+                ? "Loading Prismic pages..."
+                : documents.length > 0
+                  ? `${documents.length} pages available...`
+                  : "No pages found"}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+
+        <div
+          className={cn(
+            "absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-lg",
+            !open && "hidden",
+          )}
+        >
+          <div className="border-border border-b px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => onQueryChange(e.target.value)}
+                placeholder="Search Prismic pages..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto py-1">
+            {loading ? (
+              <p className="px-3 py-3 text-muted-foreground text-sm">Loading pages...</p>
+            ) : error ? (
+              <p className="px-3 py-3 text-destructive text-sm">{error}</p>
+            ) : filtered.length === 0 ? (
+              <p className="px-3 py-3 text-muted-foreground text-sm">
+                {query ? `No page for "${query}"` : "No pages found"}
+              </p>
+            ) : (
+              <ul role="listbox">
+                {filtered.map((doc) => (
+                  <li key={doc.id} role="option" aria-selected={selectedDocumentId === doc.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(doc)}
+                      className={cn(
+                        "flex w-full items-start gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted",
+                        selectedDocumentId === doc.id && "bg-accent",
+                      )}
+                    >
+                      <FileText
+                        className={cn(
+                          "mt-0.5 h-4 w-4 shrink-0",
+                          selectedDocumentId === doc.id
+                            ? "text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      />
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate font-medium text-foreground">
+                          {doc.metaTitle ?? doc.uid ?? doc.id}
+                        </span>
+                        <span className="truncate text-muted-foreground text-xs">
+                          {doc.uid ?? doc.id} · {doc.type} · {doc.lang}
+                          {doc.url ? ` · ${doc.url}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
