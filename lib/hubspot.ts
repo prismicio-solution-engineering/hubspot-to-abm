@@ -405,6 +405,13 @@ export interface HubSpotProperty {
   options: Array<{ label: string; value: string; displayOrder: number }>;
 }
 
+export interface HubSpotCompanyOption {
+  id: string;
+  name?: string;
+  domain?: string;
+  industry?: string;
+}
+
 export async function getCompanyProperties(): Promise<HubSpotProperty[]> {
   interface PropertiesResponse {
     results: HubSpotProperty[];
@@ -416,29 +423,113 @@ export async function getCompanyProperties(): Promise<HubSpotProperty[]> {
   return data.results;
 }
 
-export async function getSampleCompany(
-  propertyNames: string[],
-): Promise<{ name: string | null; values: Record<string, string> }> {
+function toCompanyOption(entry: {
+  id: string;
+  properties: Record<string, string | null>;
+}): HubSpotCompanyOption {
+  const p = entry.properties;
+  return {
+    id: entry.id,
+    name: nonEmpty(p.name),
+    domain: nonEmpty(p.domain),
+    industry: nonEmpty(p.industry),
+  };
+}
+
+export async function searchCompaniesForSample(
+  query: string,
+): Promise<HubSpotCompanyOption[]> {
   interface CompanySearchResponse {
     results: Array<{ id: string; properties: Record<string, string | null> }>;
   }
+
+  const trimmed = query.trim();
+  const body: Record<string, unknown> = {
+    limit: 50,
+    properties: ["name", "domain", "industry"],
+  };
+
+  if (trimmed.length > 0) {
+    body.filterGroups = [
+      {
+        filters: [
+          {
+            propertyName: "name",
+            operator: "CONTAINS_TOKEN",
+            value: `${trimmed}*`,
+          },
+        ],
+      },
+      {
+        filters: [
+          {
+            propertyName: "domain",
+            operator: "CONTAINS_TOKEN",
+            value: `${trimmed}*`,
+          },
+        ],
+      },
+    ];
+  } else {
+    body.filterGroups = [];
+    body.sorts = [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }];
+  }
+
+  const data = await hubspotRequest<CompanySearchResponse>({
+    method: "POST",
+    path: "/crm/v3/objects/companies/search",
+    body,
+  });
+
+  return data.results.map(toCompanyOption);
+}
+
+export async function getSampleCompany(
+  propertyNames: string[],
+  companyId?: string,
+): Promise<{ id: string | null; name: string | null; values: Record<string, string> }> {
+  interface CompanySearchResponse {
+    results: Array<{ id: string; properties: Record<string, string | null> }>;
+  }
+
+  const properties = Array.from(new Set([...propertyNames, "name"]));
+
+  if (companyId) {
+    const data = await hubspotRequest<CompanySearchResponse>({
+      method: "POST",
+      path: "/crm/v3/objects/companies/batch/read",
+      body: {
+        inputs: [{ id: companyId }],
+        properties,
+        propertiesWithHistory: [],
+      },
+    });
+    const company = data.results[0];
+    if (!company) return { id: null, name: null, values: {} };
+    const values: Record<string, string> = {};
+    for (const [k, v] of Object.entries(company.properties)) {
+      if (v != null && v.trim().length > 0) values[k] = v;
+    }
+    return { id: company.id, name: values.name ?? null, values };
+  }
+
   const data = await hubspotRequest<CompanySearchResponse>({
     method: "POST",
     path: "/crm/v3/objects/companies/search",
     body: {
       limit: 1,
       filterGroups: [],
-      properties: propertyNames,
+      properties,
       sorts: [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }],
     },
   });
   const first = data.results[0];
-  if (!first) return { name: null, values: {} };
+  if (!first) return { id: null, name: null, values: {} };
   const values: Record<string, string> = {};
   for (const [k, v] of Object.entries(first.properties)) {
     if (v != null && v.trim().length > 0) values[k] = v;
   }
-  return { name: values.name ?? null, values };
+  return { id: first.id, name: values.name ?? null, values };
 }
 
 export async function getListMetadata(listId: string): Promise<HubSpotList> {

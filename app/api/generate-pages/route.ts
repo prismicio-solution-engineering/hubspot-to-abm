@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { runAbmWebSearchAgent } from "@/abm/openai";
+import { getSampleCompany } from "@/lib/hubspot";
 import { getPrismicDocument, PrismicError } from "@/lib/prismic";
-import type { GeneratePagesPayload, RecommendationResponse } from "@/lib/types";
+import type {
+  GeneratePagesContact,
+  GeneratePagesPayload,
+  HubSpotContextPropertySelection,
+  RecommendationResponse,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -29,6 +35,57 @@ function isGeneratePagesPayload(value: unknown): value is GeneratePagesPayload {
     typeof payload.source.listId === "string" &&
     typeof payload.source.listName === "string" &&
     Array.isArray(payload.contacts)
+  );
+}
+
+function isContextPropertySelection(
+  value: unknown,
+): value is HubSpotContextPropertySelection {
+  const item = value as Partial<HubSpotContextPropertySelection> | null;
+  return (
+    !!item &&
+    typeof item.name === "string" &&
+    typeof item.label === "string" &&
+    typeof item.type === "string" &&
+    typeof item.groupName === "string" &&
+    typeof item.hubspotDefined === "boolean" &&
+    typeof item.instruction === "string"
+  );
+}
+
+async function enrichContactsWithContextProperties(
+  contacts: GeneratePagesContact[],
+  contextProperties: HubSpotContextPropertySelection[] | undefined,
+): Promise<GeneratePagesContact[]> {
+  const selectedProperties = contextProperties?.filter(isContextPropertySelection) ?? [];
+  if (selectedProperties.length === 0) return contacts;
+
+  const propertyNames = selectedProperties.map((property) => property.name);
+
+  return Promise.all(
+    contacts.map(async (contact) => {
+      const companyId = contact.associatedCompany?.id;
+      if (!companyId) {
+        return {
+          ...contact,
+          companyContextProperties: selectedProperties.map((property) => ({
+            propertyName: property.name,
+            propertyValue: null,
+            "How to use it": property.instruction,
+          })),
+        };
+      }
+
+      const sample = await getSampleCompany(propertyNames, companyId);
+      return {
+        ...contact,
+        companyContextProperties: selectedProperties.map((property) => ({
+          propertyName: property.name,
+          propertyValue: sample.values[property.name] ?? null,
+          "How to use it": property.instruction,
+        })),
+      };
+    }),
   );
 }
 
@@ -83,12 +140,17 @@ export async function POST(req: Request) {
 
   try {
     const prismicDocument = await getPrismicDocument(payload.target.documentId);
+    const contacts = await enrichContactsWithContextProperties(
+      payload.contacts,
+      payload.contextProperties,
+    );
     const ai = await runAbmWebSearchAgent({
       input: {
         prismicDocument,
         hubspot: {
           source: payload.source,
-          contacts: payload.contacts,
+          contextProperties: payload.contextProperties ?? [],
+          contacts,
         },
       },
     });

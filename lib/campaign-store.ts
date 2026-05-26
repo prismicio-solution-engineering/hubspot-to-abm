@@ -1,6 +1,11 @@
 import { create } from "zustand";
 
-import type { HubSpotList, PrismicDocumentMetadata, RecommendationResponse } from "./types";
+import type {
+  HubSpotContextPropertySelection,
+  HubSpotList,
+  PrismicDocumentMetadata,
+  RecommendationResponse,
+} from "./types";
 import { getCampaignById, updateCampaign } from "./campaigns-store";
 
 interface CampaignStore {
@@ -9,6 +14,7 @@ interface CampaignStore {
   selectedPrismicDocument: PrismicDocumentMetadata | null;
   selectedList: HubSpotList | null;
   selectedContactIds: string[];
+  selectedContextProperties: HubSpotContextPropertySelection[];
   recommendation: RecommendationResponse | null;
   openAIResponseId: string | null;
   _persistEnabled: boolean;
@@ -17,6 +23,7 @@ interface CampaignStore {
   setSelectedPrismicDocument: (document: PrismicDocumentMetadata | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
+  setSelectedContextProperties: (properties: HubSpotContextPropertySelection[]) => void;
   setRecommendation: (
     recommendation: RecommendationResponse | null,
     openAIResponseId?: string | null,
@@ -36,6 +43,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
   selectedPrismicDocument: null,
   selectedList: null,
   selectedContactIds: [],
+  selectedContextProperties: [],
   recommendation: null,
   openAIResponseId: null,
   _persistEnabled: false,
@@ -49,6 +57,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
       selectedPrismicDocument: saved?.selectedPrismicDocument ?? null,
       selectedList: saved?.selectedList ?? null,
       selectedContactIds: saved?.selectedContactIds ?? [],
+      selectedContextProperties: saved?.selectedContextProperties ?? [],
       recommendation: saved?.recommendation ?? null,
       openAIResponseId: saved?.openAIResponseId ?? null,
     });
@@ -62,6 +71,9 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
 
   setSelectedContactIds: (ids) =>
     set({ selectedContactIds: ids, recommendation: null, openAIResponseId: null }),
+
+  setSelectedContextProperties: (properties) =>
+    set({ selectedContextProperties: properties }),
 
   setRecommendation: (recommendation, openAIResponseId = null) =>
     set({ recommendation, openAIResponseId }),
@@ -113,6 +125,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
       selectedPrismicDocument: null,
       selectedList: null,
       selectedContactIds: [],
+      selectedContextProperties: [],
       recommendation: null,
       openAIResponseId: null,
       _persistEnabled: false,
@@ -125,6 +138,7 @@ useCampaignStore.subscribe((state) => {
     selectedPrismicDocument: state.selectedPrismicDocument,
     selectedList: state.selectedList,
     selectedContactIds: state.selectedContactIds,
+    selectedContextProperties: state.selectedContextProperties,
     recommendation: state.recommendation,
     openAIResponseId: state.openAIResponseId,
   });

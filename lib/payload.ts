@@ -2,6 +2,7 @@ import type {
   Contact,
   GeneratePagesContact,
   GeneratePagesPayload,
+  HubSpotContextPropertySelection,
   PrismicDocumentMetadata,
 } from "./types";
 
@@ -23,6 +24,7 @@ export function buildPayload(
   prismicDocument: PrismicDocumentMetadata,
   listId: string,
   listName: string,
+  contextProperties: readonly HubSpotContextPropertySelection[] = [],
   now: Date = new Date(),
 ): GeneratePagesPayload {
   const selected = contacts
@@ -44,6 +46,7 @@ export function buildPayload(
       listId,
       listName,
     },
+    contextProperties: contextProperties.filter((property) => property.name.length > 0),
     contacts: selected,
   };
 }

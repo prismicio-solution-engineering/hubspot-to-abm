@@ -10,7 +10,7 @@ import ContactsTable from "../ContactsTable";
 import GeneratingModal from "../GeneratingModal";
 import TypeBadge from "../TypeBadge";
 import { useCampaignStore } from "@/lib/campaign-store";
-import { updateCampaign } from "@/lib/campaigns-store";
+import { getStandaloneContextProperties, updateCampaign } from "@/lib/campaigns-store";
 import { buildPayload } from "@/lib/payload";
 import type {
   ErrorResponse,
@@ -44,6 +44,7 @@ export default function SelectContactsStep() {
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
   const selectedList = useCampaignStore((s) => s.selectedList);
   const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
+  const selectedContextProperties = useCampaignStore((s) => s.selectedContextProperties);
   const setRecommendation = useCampaignStore((s) => s.setRecommendation);
   const setSelectedContactIds = useCampaignStore((s) => s.setSelectedContactIds);
   const listId = selectedList?.id ?? null;
@@ -111,12 +112,18 @@ export default function SelectContactsStep() {
       return;
     }
 
+    const effectiveContextProperties =
+      selectedContextProperties.length > 0
+        ? selectedContextProperties
+        : getStandaloneContextProperties();
+
     const requestPayload: GeneratePagesPayload = buildPayload(
       state.data.records,
       selectedIds,
       selectedPrismicDocument,
       selectedList.id,
       selectedList.name,
+      effectiveContextProperties,
     );
 
     setGenerationState({ status: "loading" });
