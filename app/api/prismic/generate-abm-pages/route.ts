@@ -8,6 +8,8 @@ export const runtime = "nodejs";
 interface GenerateAbmPagesRequest {
   demoId?: string;
   demoRepository?: string;
+  demoMasterToken?: string;
+  demoWriteToken?: string;
   releaseName: string;
   baselineDocumentID: string;
   recommendationItems: RecommendationItem[];
@@ -43,6 +45,8 @@ function isRequest(value: unknown): value is GenerateAbmPagesRequest {
     body.baselineDocumentID.trim().length > 0 &&
     (body.demoId === undefined || typeof body.demoId === "string") &&
     (body.demoRepository === undefined || typeof body.demoRepository === "string") &&
+    (body.demoMasterToken === undefined || typeof body.demoMasterToken === "string") &&
+    (body.demoWriteToken === undefined || typeof body.demoWriteToken === "string") &&
     Array.isArray(body.recommendationItems) &&
     body.recommendationItems.every(isRecommendationItem)
   );
@@ -173,6 +177,8 @@ export async function POST(req: Request) {
     const { repository, writeToken: token } = getPrismicWriteConfigForDemo(
       body.demoId,
       body.demoRepository,
+      body.demoMasterToken,
+      body.demoWriteToken,
     );
     const release = await createRelease(repository, token, body.releaseName.trim());
 

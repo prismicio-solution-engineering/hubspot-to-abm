@@ -21,6 +21,10 @@ function getEnv(name: string): string | undefined {
   return value && value.trim().length > 0 ? value.trim() : undefined;
 }
 
+function getEnvValue(value: string | null | undefined): string | undefined {
+  return value && value.trim().length > 0 ? value.trim() : undefined;
+}
+
 function normalizeRepository(value: string | null | undefined): string | null {
   const repository = value?.trim();
   if (!repository) return null;
@@ -33,6 +37,7 @@ function normalizeRepository(value: string | null | undefined): string | null {
 export function getPrismicReadConfigForDemo(
   demoId: string | null | undefined,
   repositoryOverride?: string | null,
+  masterTokenOverride?: string | null,
 ): DemoPrismicReadConfig {
   const demo = demoId ? getDemoShowcase(demoId) : null;
   const customRepository = normalizeRepository(repositoryOverride);
@@ -45,6 +50,7 @@ export function getPrismicReadConfigForDemo(
     customRepository ??
     getEnv("PRISMIC_REPOSITORY");
   const masterToken =
+    getEnvValue(masterTokenOverride) ??
     (prefix ? getEnv(`PRISMIC_${prefix}_MASTER_TOKEN`) : undefined) ??
     getEnv("PRISMIC_MASTER_TOKEN");
 
@@ -57,10 +63,17 @@ export function getPrismicReadConfigForDemo(
 export function getPrismicWriteConfigForDemo(
   demoId: string | null | undefined,
   repositoryOverride?: string | null,
+  masterTokenOverride?: string | null,
+  writeTokenOverride?: string | null,
 ): DemoPrismicWriteConfig {
-  const readConfig = getPrismicReadConfigForDemo(demoId, repositoryOverride);
+  const readConfig = getPrismicReadConfigForDemo(
+    demoId,
+    repositoryOverride,
+    masterTokenOverride,
+  );
   const prefix = readConfig.demo ? getDemoEnvPrefix(readConfig.demo.id) : null;
   const writeToken =
+    getEnvValue(writeTokenOverride) ??
     (prefix ? getEnv(`PRISMIC_${prefix}_WRITE_TOKEN`) : undefined) ??
     getEnv("PRISMIC_WRITE_TOKEN");
 

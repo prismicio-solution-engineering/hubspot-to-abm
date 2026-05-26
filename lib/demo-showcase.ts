@@ -11,6 +11,8 @@ export interface DemoShowcase {
   canEmbedPreview: boolean;
   releasePrefix: string;
   editedLabel: string;
+  masterToken?: string;
+  writeToken?: string;
 }
 
 export type DemoShowcaseFormInput = Omit<
@@ -77,5 +79,7 @@ export function createDemoShowcase(input: DemoShowcaseFormInput): DemoShowcase {
     canEmbedPreview: input.canEmbedPreview,
     releasePrefix: (input.releasePrefix ?? input.name).trim(),
     editedLabel: input.editedLabel?.trim() || "Custom demo",
+    masterToken: input.masterToken?.trim() || undefined,
+    writeToken: input.writeToken?.trim() || undefined,
   };
 }

@@ -105,6 +105,8 @@ export interface GeneratePagesPayload {
   generatedAt: string;
   demoId?: string;
   demoRepository?: string;
+  demoMasterToken?: string;
+  demoWriteToken?: string;
   target: {
     type: "prismic_document";
     documentId: string;

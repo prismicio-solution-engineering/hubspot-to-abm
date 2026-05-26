@@ -77,6 +77,8 @@ interface GenState {
 interface DemoFormState {
   name: string;
   repository: string;
+  masterToken: string;
+  writeToken: string;
   baselineDocumentId: string;
   documentUid: string;
   customType: string;
@@ -117,6 +119,8 @@ function demoToFormState(demo: DemoShowcase): DemoFormState {
   return {
     name: demo.name,
     repository: demo.repository,
+    masterToken: demo.masterToken ?? "",
+    writeToken: demo.writeToken ?? "",
     baselineDocumentId: demo.baselineDocumentId,
     documentUid: demo.documentUid ?? "",
     customType: demo.customType,
@@ -147,9 +151,15 @@ function saveCustomDemo(form: DemoFormState): DemoShowcase {
     id: "custom-demo",
     editedLabel: "Custom demo",
   });
+  const persistedForm = {
+    ...form,
+    masterToken: "",
+    writeToken: "",
+    canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview,
+  };
   localStorage.setItem(
     CUSTOM_DEMO_STORAGE_KEY,
-    JSON.stringify({ ...form, canEmbedPreview: isBuilderUrl ? false : form.canEmbedPreview }),
+    JSON.stringify(persistedForm),
   );
   return demo;
 }
@@ -330,6 +340,8 @@ export default function PrototypeView() {
         generatedAt: new Date().toISOString(),
         demoId: selectedDemo.id,
         demoRepository: selectedDemo.repository,
+        demoMasterToken: selectedDemo.masterToken,
+        demoWriteToken: selectedDemo.writeToken,
         target: {
           type: "prismic_document",
           documentId: selectedDemo.baselineDocumentId,
@@ -370,6 +382,8 @@ export default function PrototypeView() {
         body: JSON.stringify({
           demoId: selectedDemo.id,
           demoRepository: selectedDemo.repository,
+          demoMasterToken: selectedDemo.masterToken,
+          demoWriteToken: selectedDemo.writeToken,
           releaseName,
           baselineDocumentID: selectedDemo.baselineDocumentId,
           recommendationItems: recommendation.recommendationItems,
@@ -706,34 +720,41 @@ function DemoSetupDialog({
     setLoadingDocuments(true);
     setDocumentError(null);
 
-    const params = new URLSearchParams({
-      repository: form.repository.trim(),
-      type: "all",
-    });
-
-    fetch(`/api/prismic/documents?${params.toString()}`, {
-      signal: controller.signal,
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as ErrorResponse;
-          throw new Error(data.error ?? `Error ${res.status}`);
-        }
-        return res.json() as Promise<{ documents: PrismicDocumentMetadata[] }>;
+    const timeout = window.setTimeout(() => {
+      fetch("/api/prismic/documents", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repository: form.repository.trim(),
+          masterToken: form.masterToken.trim() || undefined,
+          type: "all",
+        }),
       })
-      .then(({ documents }) => {
-        setDocuments(documents);
-        setLoadingDocuments(false);
-      })
-      .catch((err: Error) => {
-        if (err.name === "AbortError") return;
-        setDocuments([]);
-        setDocumentError(err.message);
-        setLoadingDocuments(false);
-      });
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = (await res.json().catch(() => ({}))) as ErrorResponse;
+            throw new Error(data.error ?? `Error ${res.status}`);
+          }
+          return res.json() as Promise<{ documents: PrismicDocumentMetadata[] }>;
+        })
+        .then(({ documents }) => {
+          setDocuments(documents);
+          setLoadingDocuments(false);
+        })
+        .catch((err: Error) => {
+          if (err.name === "AbortError") return;
+          setDocuments([]);
+          setDocumentError(err.message);
+          setLoadingDocuments(false);
+        });
+    }, 300);
 
-    return () => controller.abort();
-  }, [form.repository, open]);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [form.masterToken, form.repository, open]);
 
   function update<K extends keyof DemoFormState>(key: K, value: DemoFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -777,13 +798,7 @@ function DemoSetupDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <DemoField
-              label="Demo name"
-              value={form.name}
-              onChange={(value) => update("name", value)}
-              placeholder="Martech Madrid"
-            />
+          <div className="grid gap-4">
             <DemoField
               label="Prismic repository"
               value={form.repository}
@@ -799,6 +814,27 @@ function DemoSetupDialog({
               placeholder="template-landing"
             />
           </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <DemoField
+              label="Master access token"
+              value={form.masterToken}
+              onChange={(value) => update("masterToken", value)}
+              placeholder="Uses PRISMIC_MASTER_TOKEN when empty"
+              type="password"
+            />
+            <DemoField
+              label="Write token"
+              value={form.writeToken}
+              onChange={(value) => update("writeToken", value)}
+              placeholder="Uses PRISMIC_WRITE_TOKEN when empty"
+              type="password"
+            />
+          </div>
+          <p className="mt-2 text-muted-foreground text-xs">
+            Leave tokens empty to use the server env vars. Enter them here only to override
+            the defaults for this demo session.
+          </p>
 
           <div className="mt-4">
             <DemoDocumentPicker
@@ -870,16 +906,19 @@ function DemoField({
   value,
   onChange,
   placeholder,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  type?: "text" | "password";
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <Label>{label}</Label>
       <Input
+        type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

@@ -38,6 +38,10 @@ function isGeneratePagesPayload(value: unknown): value is GeneratePagesPayload {
     (payload.demoId === undefined || typeof payload.demoId === "string") &&
     (payload.demoRepository === undefined ||
       typeof payload.demoRepository === "string") &&
+    (payload.demoMasterToken === undefined ||
+      typeof payload.demoMasterToken === "string") &&
+    (payload.demoWriteToken === undefined ||
+      typeof payload.demoWriteToken === "string") &&
     Array.isArray(payload.contacts)
   );
 }
@@ -146,6 +150,7 @@ export async function POST(req: Request) {
     const prismicConfig = getPrismicReadConfigForDemo(
       payload.demoId,
       payload.demoRepository,
+      payload.demoMasterToken,
     );
     const prismicDocument = await getPrismicDocument(payload.target.documentId, {
       repository: prismicConfig.repository,
