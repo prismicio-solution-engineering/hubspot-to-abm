@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search, ChevronDown, FileText } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { PrismicConnection } from "@/lib/prismic-connections";
 import type { ErrorResponse, PrismicDocumentMetadata } from "@/lib/types";
 
 interface DocumentsResponse {
@@ -11,17 +12,31 @@ interface DocumentsResponse {
 }
 
 interface Props {
+  connection: PrismicConnection;
+  selectedDocument?: PrismicDocumentMetadata | null;
   onDocumentSelected: (document: PrismicDocumentMetadata) => void;
 }
 
-let cachedDocuments: PrismicDocumentMetadata[] | null = null;
-let fetchPromise: Promise<PrismicDocumentMetadata[]> | null = null;
+const cachedDocuments = new Map<string, PrismicDocumentMetadata[]>();
+const fetchPromises = new Map<string, Promise<PrismicDocumentMetadata[]>>();
 
-function fetchDocuments(): Promise<PrismicDocumentMetadata[]> {
-  if (cachedDocuments) return Promise.resolve(cachedDocuments);
-  if (fetchPromise) return fetchPromise;
+function fetchDocuments(connection: PrismicConnection): Promise<PrismicDocumentMetadata[]> {
+  const cacheKey = `${connection.repository}:${connection.masterToken}`;
+  const cached = cachedDocuments.get(cacheKey);
+  if (cached) return Promise.resolve(cached);
 
-  fetchPromise = fetch("/api/prismic/documents?type=landing")
+  const existingPromise = fetchPromises.get(cacheKey);
+  if (existingPromise) return existingPromise;
+
+  const promise = fetch("/api/prismic/documents", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      repository: connection.repository,
+      masterToken: connection.masterToken,
+      type: "landing",
+    }),
+  })
     .then(async (res) => {
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as ErrorResponse;
@@ -30,24 +45,31 @@ function fetchDocuments(): Promise<PrismicDocumentMetadata[]> {
       return res.json() as Promise<DocumentsResponse>;
     })
     .then(({ documents }) => {
-      cachedDocuments = documents;
+      cachedDocuments.set(cacheKey, documents);
       return documents;
     })
     .catch((err) => {
-      fetchPromise = null;
+      fetchPromises.delete(cacheKey);
       throw err;
     });
 
-  return fetchPromise;
+  fetchPromises.set(cacheKey, promise);
+  return promise;
 }
 
-export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
+export default function PrismicDocumentCombobox({
+  connection,
+  selectedDocument,
+  onDocumentSelected,
+}: Props) {
   const [query, setQuery] = useState("");
-  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>(cachedDocuments ?? []);
-  const [loading, setLoading] = useState(cachedDocuments === null);
+  const [documents, setDocuments] = useState<PrismicDocumentMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<PrismicDocumentMetadata | null>(null);
+  const [selected, setSelected] = useState<PrismicDocumentMetadata | null>(
+    selectedDocument ?? null,
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,10 +79,15 @@ export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
   }, [open]);
 
   useEffect(() => {
-    if (cachedDocuments) return;
     let cancelled = false;
+    const cacheKey = `${connection.repository}:${connection.masterToken}`;
+    const cached = cachedDocuments.get(cacheKey);
 
-    fetchDocuments()
+    setError(null);
+    setLoading(!cached);
+    setDocuments(cached ?? []);
+
+    fetchDocuments(connection)
       .then((docs) => {
         if (!cancelled) {
           setDocuments(docs);
@@ -77,7 +104,11 @@ export default function PrismicDocumentCombobox({ onDocumentSelected }: Props) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [connection]);
+
+  useEffect(() => {
+    setSelected(selectedDocument ?? null);
+  }, [selectedDocument]);
 
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {

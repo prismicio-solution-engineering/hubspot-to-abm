@@ -16,6 +16,7 @@ export interface SavedCampaign {
   createdAt: string;
   currentStep?: string;
   // Full state (for resuming mid-flow)
+  selectedPrismicConnectionId?: string | null;
   selectedPrismicDocument?: PrismicDocumentMetadata | null;
   selectedList?: HubSpotList | null;
   selectedContactIds?: string[];

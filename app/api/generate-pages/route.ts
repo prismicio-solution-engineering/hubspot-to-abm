@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { runAbmWebSearchAgent } from "@/abm/openai";
-import { getPrismicReadConfigForDemo } from "@/lib/demo-showcase-server";
+import { getPrismicReadConfig } from "@/lib/prismic-config-server";
 import { getSampleCompany } from "@/lib/hubspot";
 import { getPrismicDocument, PrismicError } from "@/lib/prismic";
 import type {
@@ -35,13 +35,12 @@ function isGeneratePagesPayload(value: unknown): value is GeneratePagesPayload {
     payload.source?.type === "hubspot_list" &&
     typeof payload.source.listId === "string" &&
     typeof payload.source.listName === "string" &&
-    (payload.demoId === undefined || typeof payload.demoId === "string") &&
-    (payload.demoRepository === undefined ||
-      typeof payload.demoRepository === "string") &&
-    (payload.demoMasterToken === undefined ||
-      typeof payload.demoMasterToken === "string") &&
-    (payload.demoWriteToken === undefined ||
-      typeof payload.demoWriteToken === "string") &&
+    (payload.prismicRepository === undefined ||
+      typeof payload.prismicRepository === "string") &&
+    (payload.prismicMasterToken === undefined ||
+      typeof payload.prismicMasterToken === "string") &&
+    (payload.prismicWriteToken === undefined ||
+      typeof payload.prismicWriteToken === "string") &&
     Array.isArray(payload.contacts)
   );
 }
@@ -147,11 +146,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const prismicConfig = getPrismicReadConfigForDemo(
-      payload.demoId,
-      payload.demoRepository,
-      payload.demoMasterToken,
-    );
+    const prismicConfig = getPrismicReadConfig({
+      repository: payload.prismicRepository,
+      masterToken: payload.prismicMasterToken,
+    });
     const prismicDocument = await getPrismicDocument(payload.target.documentId, {
       repository: prismicConfig.repository,
       masterToken: prismicConfig.masterToken,

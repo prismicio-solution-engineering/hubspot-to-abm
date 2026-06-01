@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
+import Link from "next/link";
+import { Search, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import NewCampaignDialog from "@/components/NewCampaignDialog";
 import CampaignList from "@/components/CampaignList";
@@ -43,14 +44,14 @@ export default function HomePage() {
             />
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <NewCampaignDialog onCreated={reload} />
-            <a
-              href="https://template-landing.prismic.io/builder/working"
-              className="flex items-center justify-center w-10 h-10 rounded hover:bg-muted transition-colors"
-              aria-label="Close"
+            <Link
+              href="/settings"
+              className="flex h-10 w-10 items-center justify-center rounded hover:bg-muted transition-colors"
+              aria-label="Settings"
             >
-              <X className="w-5 h-5" style={{ color: "#6f6e77" }} />
-            </a>
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </Link>
+            <NewCampaignDialog onCreated={reload} />
           </div>
         </div>
       </header>

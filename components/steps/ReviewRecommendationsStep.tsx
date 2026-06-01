@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import RecommendationCards from "../RecommendationCards";
 import { useCampaignStore } from "@/lib/campaign-store";
 import { updateCampaign } from "@/lib/campaigns-store";
+import { getPrismicConnection } from "@/lib/prismic-connections";
 import { useStepNavigation } from "@/lib/useStepNavigation";
 import type { ErrorResponse, PrismicGenerationResult } from "@/lib/types";
 
@@ -20,6 +21,7 @@ type GenerationState =
 export default function ReviewRecommendationsStep() {
   const { goToStep } = useStepNavigation();
   const id = useCampaignStore((s) => s.id);
+  const selectedPrismicConnectionId = useCampaignStore((s) => s.selectedPrismicConnectionId);
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
   const selectedList = useCampaignStore((s) => s.selectedList);
   const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
@@ -39,6 +41,14 @@ export default function ReviewRecommendationsStep() {
     e.preventDefault();
     const name = releaseName.trim();
     if (!name || !recommendation || !selectedPrismicDocument) return;
+    const prismicConnection = getPrismicConnection(selectedPrismicConnectionId);
+    if (!prismicConnection) {
+      setGenerationState({
+        status: "error",
+        message: "Select a saved Prismic repository before creating a release.",
+      });
+      return;
+    }
 
     setGenerationState({ status: "loading" });
 
@@ -47,6 +57,9 @@ export default function ReviewRecommendationsStep() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          prismicRepository: prismicConnection.repository,
+          prismicMasterToken: prismicConnection.masterToken,
+          prismicWriteToken: prismicConnection.writeToken,
           releaseName: name,
           baselineDocumentID: selectedPrismicDocument.id,
           recommendationItems: recommendation.recommendationItems,

@@ -12,6 +12,7 @@ import TypeBadge from "../TypeBadge";
 import { useCampaignStore } from "@/lib/campaign-store";
 import { getStandaloneContextProperties, updateCampaign } from "@/lib/campaigns-store";
 import { buildPayload } from "@/lib/payload";
+import { getPrismicConnection } from "@/lib/prismic-connections";
 import type {
   ErrorResponse,
   GeneratePagesPayload,
@@ -41,6 +42,7 @@ export default function SelectContactsStep() {
   const { goToStep } = useStepNavigation();
   const id = useCampaignStore((s) => s.id);
   const portalId = useCampaignStore((s) => s.portalId);
+  const selectedPrismicConnectionId = useCampaignStore((s) => s.selectedPrismicConnectionId);
   const selectedPrismicDocument = useCampaignStore((s) => s.selectedPrismicDocument);
   const selectedList = useCampaignStore((s) => s.selectedList);
   const selectedContactIds = useCampaignStore((s) => s.selectedContactIds);
@@ -111,6 +113,14 @@ export default function SelectContactsStep() {
       });
       return;
     }
+    const prismicConnection = getPrismicConnection(selectedPrismicConnectionId);
+    if (!prismicConnection) {
+      setGenerationState({
+        status: "error",
+        message: "Select a saved Prismic repository before generating pages.",
+      });
+      return;
+    }
 
     const effectiveContextProperties =
       selectedContextProperties.length > 0
@@ -125,6 +135,9 @@ export default function SelectContactsStep() {
       selectedList.name,
       effectiveContextProperties,
     );
+    requestPayload.prismicRepository = prismicConnection.repository;
+    requestPayload.prismicMasterToken = prismicConnection.masterToken;
+    requestPayload.prismicWriteToken = prismicConnection.writeToken;
 
     setGenerationState({ status: "loading" });
 

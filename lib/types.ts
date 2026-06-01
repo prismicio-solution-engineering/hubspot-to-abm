@@ -103,10 +103,9 @@ export interface GeneratePagesCompanyContextProperty {
 export interface GeneratePagesPayload {
   version: "1.0";
   generatedAt: string;
-  demoId?: string;
-  demoRepository?: string;
-  demoMasterToken?: string;
-  demoWriteToken?: string;
+  prismicRepository?: string;
+  prismicMasterToken?: string;
+  prismicWriteToken?: string;
   target: {
     type: "prismic_document";
     documentId: string;

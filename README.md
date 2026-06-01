@@ -132,27 +132,22 @@ Les propriétés vides sont **omises** (pas de `null`, pas de chaîne vide) pour
 
 Le champ `version: "1.0"` permet de faire évoluer le format sans casser les consommateurs. L'envoi à Prismic n'est pas encore implémenté : pour l'instant, l'endpoint retourne la recommandation JSON générée par OpenAI.
 
-## Prototype demo showcase
+## Client Prismic settings
 
-La page `/prototype` peut afficher une page de demo Prismic à droite du chat IA. Le bouton **Demo** permet de choisir une configuration depuis `lib/demo-showcase.ts` ou d'ouvrir **Configure demo** pour sélectionner une page Prismic directement dans l'app.
+La branche client ne contient pas la page prototype/demo. Les repositories Prismic
+sont configurés dans **Settings** avec :
 
-Chaque demo définit :
+- un label ;
+- le repository ;
+- le master access token ;
+- le write token.
 
-- le repository Prismic à interroger ;
-- le document Prismic de base utilisé par l'agent ABM ;
-- l'URL de preview chargée dans le panneau de droite, si Prismic la fournit.
+Pour l'instant, ces connexions sont stockées dans le `sessionStorage` du navigateur
+afin de tester le flow sans Supabase. Le flow de campagne demande ensuite de choisir
+un repository sauvegardé avant de sélectionner le document Prismic.
 
-Les secrets Prismic restent côté serveur. Pour une demo `martech-madrid`, l'app utilise d'abord les variables suivantes si elles existent, puis retombe sur les variables Prismic globales :
-
-```
-PRISMIC_MARTECH_MADRID_REPOSITORY=template-landing
-PRISMIC_MARTECH_MADRID_MASTER_TOKEN=MC5...
-PRISMIC_MARTECH_MADRID_WRITE_TOKEN=...
-```
-
-Le client envoie seulement `demoId`, `demoRepository` et le document sélectionné ; les endpoints `/api/generate-pages` et `/api/prismic/generate-abm-pages` résolvent les tokens côté serveur.
-
-La configuration saisie dans l'app est stockée dans le `localStorage` du navigateur et ne contient pas de secrets. Les tokens restent fournis par `.env.local`. Le nom de release est demandé dans le chat après la sélection des comptes.
+Le contexte ABM HubSpot est aussi exposé depuis **Settings** via le context designer.
+Les propriétés sauvegardées sont utilisées automatiquement pendant la génération.
 
 ## Architecture du flow par étapes
 

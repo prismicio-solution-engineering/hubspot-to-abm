@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getPrismicReadConfigForDemo } from "@/lib/demo-showcase-server";
+import { getPrismicReadConfig } from "@/lib/prismic-config-server";
 import {
   getPrismicDocuments,
   getPrismicDocumentsByType,
@@ -21,7 +21,7 @@ async function getDocuments({
   masterToken,
   type = "all",
 }: DocumentsRequest) {
-  const prismicConfig = getPrismicReadConfigForDemo(null, repository, masterToken);
+  const prismicConfig = getPrismicReadConfig({ repository, masterToken });
   const config = {
     repository: prismicConfig.repository,
     masterToken: prismicConfig.masterToken,

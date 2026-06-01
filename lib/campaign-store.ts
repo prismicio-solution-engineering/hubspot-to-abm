@@ -11,6 +11,7 @@ import { getCampaignById, updateCampaign } from "./campaigns-store";
 interface CampaignStore {
   id: string;
   portalId: string;
+  selectedPrismicConnectionId: string | null;
   selectedPrismicDocument: PrismicDocumentMetadata | null;
   selectedList: HubSpotList | null;
   selectedContactIds: string[];
@@ -20,6 +21,7 @@ interface CampaignStore {
   _persistEnabled: boolean;
 
   initCampaign: (id: string, portalId: string) => void;
+  setSelectedPrismicConnectionId: (id: string | null) => void;
   setSelectedPrismicDocument: (document: PrismicDocumentMetadata | null) => void;
   setSelectedList: (list: HubSpotList | null) => void;
   setSelectedContactIds: (ids: string[]) => void;
@@ -40,6 +42,7 @@ interface CampaignStore {
 export const useCampaignStore = create<CampaignStore>((set) => ({
   id: "",
   portalId: "",
+  selectedPrismicConnectionId: null,
   selectedPrismicDocument: null,
   selectedList: null,
   selectedContactIds: [],
@@ -54,6 +57,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
       id,
       portalId,
       _persistEnabled: true,
+      selectedPrismicConnectionId: saved?.selectedPrismicConnectionId ?? null,
       selectedPrismicDocument: saved?.selectedPrismicDocument ?? null,
       selectedList: saved?.selectedList ?? null,
       selectedContactIds: saved?.selectedContactIds ?? [],
@@ -62,6 +66,9 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
       openAIResponseId: saved?.openAIResponseId ?? null,
     });
   },
+
+  setSelectedPrismicConnectionId: (id) =>
+    set({ selectedPrismicConnectionId: id, selectedPrismicDocument: null, selectedList: null, selectedContactIds: [], recommendation: null, openAIResponseId: null }),
 
   setSelectedPrismicDocument: (document) =>
     set({ selectedPrismicDocument: document, selectedList: null, selectedContactIds: [], recommendation: null, openAIResponseId: null }),
@@ -122,6 +129,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
     set({
       id: "",
       portalId: "",
+      selectedPrismicConnectionId: null,
       selectedPrismicDocument: null,
       selectedList: null,
       selectedContactIds: [],
@@ -135,6 +143,7 @@ export const useCampaignStore = create<CampaignStore>((set) => ({
 useCampaignStore.subscribe((state) => {
   if (!state._persistEnabled) return;
   updateCampaign(state.id, {
+    selectedPrismicConnectionId: state.selectedPrismicConnectionId,
     selectedPrismicDocument: state.selectedPrismicDocument,
     selectedList: state.selectedList,
     selectedContactIds: state.selectedContactIds,
