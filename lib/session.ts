@@ -1,5 +1,5 @@
 export const SESSION_COOKIE_NAME = "session";
-export const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
+export const SESSION_DURATION_SECONDS = 60 * 60 * 12; // 12 hours
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -77,7 +77,7 @@ export async function verifySessionToken(token: string | undefined): Promise<boo
 
 export function verifyPassword(input: string): boolean {
   const expected = process.env.APP_PASSWORD;
-  if (!expected) return false;
+  if (!expected || expected.length < 16) return false;
   const a = encoder.encode(input);
   const b = encoder.encode(expected);
   if (a.length !== b.length) {

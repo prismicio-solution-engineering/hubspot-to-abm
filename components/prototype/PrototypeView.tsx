@@ -90,6 +90,11 @@ interface DemoFormState {
 const CUSTOM_DEMO_STORAGE_KEY = "abm_prototype_custom_demo_v1";
 const CUSTOM_DEMOS_STORAGE_KEY = "abm_prototype_custom_demos_v1";
 
+function getDemoStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  return window.sessionStorage;
+}
+
 function toGeneratePagesContact(
   record: Contact | Company,
   type: "contact" | "company",
@@ -164,15 +169,25 @@ function readStoredDemos(raw: string | null): DemoShowcase[] {
 
 function loadSavedDemos(): DemoShowcase[] {
   if (typeof window === "undefined") return [];
-  const demos = readStoredDemos(localStorage.getItem(CUSTOM_DEMOS_STORAGE_KEY));
+  const storage = getDemoStorage();
+  const demos = readStoredDemos(storage?.getItem(CUSTOM_DEMOS_STORAGE_KEY) ?? null);
   if (demos.length > 0) return demos;
 
   try {
+    const legacyDemos = readStoredDemos(localStorage.getItem(CUSTOM_DEMOS_STORAGE_KEY));
+    if (legacyDemos.length > 0) {
+      storage?.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify(legacyDemos));
+      localStorage.removeItem(CUSTOM_DEMOS_STORAGE_KEY);
+      localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+      return legacyDemos;
+    }
+
     const raw = localStorage.getItem(CUSTOM_DEMO_STORAGE_KEY);
     if (!raw) return [];
     const legacyDemo = createDemoShowcase(JSON.parse(raw) as DemoFormState);
-    localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify([legacyDemo]));
+    storage?.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify([legacyDemo]));
     localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+    localStorage.removeItem(CUSTOM_DEMOS_STORAGE_KEY);
     return [legacyDemo];
   } catch {
     return [];
@@ -195,8 +210,11 @@ function saveCustomDemo(
     editedLabel: "Custom demo",
   });
   const demos = [demo, ...currentDemos.filter((saved) => saved.id !== demo.id)];
-  localStorage.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify(demos));
-  localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+  getDemoStorage()?.setItem(CUSTOM_DEMOS_STORAGE_KEY, JSON.stringify(demos));
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(CUSTOM_DEMO_STORAGE_KEY);
+    localStorage.removeItem(CUSTOM_DEMOS_STORAGE_KEY);
+  }
   return { demo, demos };
 }
 

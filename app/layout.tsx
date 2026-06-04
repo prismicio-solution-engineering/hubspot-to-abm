@@ -6,6 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ABM Campaigns",
   description: "Create ABM campaigns from HubSpot segments.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
